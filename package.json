@@ -1,0 +1,78 @@
+{
+  "name": "@tsdevstack/cli",
+  "version": "0.0.1",
+  "description": "CLI tools and code generators for tsdevstack framework",
+  "author": "tsdevstack",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsdevstack/cli-core.git"
+  },
+  "homepage": "https://github.com/tsdevstack/cli-core",
+  "bugs": {
+    "url": "https://github.com/tsdevstack/cli-core/issues"
+  },
+  "keywords": [
+    "tsdevstack",
+    "cli",
+    "microservices",
+    "code-generator",
+    "nestjs",
+    "nextjs",
+    "kong",
+    "infrastructure",
+    "devops"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "type": "module",
+  "bin": {
+    "tsdevstack": "./dist/cli.js"
+  },
+  "exports": {
+    "./plugin": {
+      "types": "./src/plugin/index.ts",
+      "import": "./dist/plugin/index.js"
+    },
+    "./test-utils": {
+      "types": "./src/test-utils/index.ts",
+      "import": "./src/test-utils/index.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "echo 'CLI does not need watch mode - already built'",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "test": "rstest run",
+    "test:watch": "rstest",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tsdevstack/cli-cloud-secrets": "0.0.1",
+    "@tsdevstack/cli-infra": "0.0.1",
+    "@tsdevstack/cli-mcp": "0.0.1",
+    "axios": "^1.12.2",
+    "commander": "^12.0.0",
+    "handlebars": "^4.7.8",
+    "inquirer": "^12.10.0",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@rslib/core": "^0.19.6",
+    "@rstest/adapter-rslib": "^0.2.0",
+    "@rstest/core": "^0.8.5",
+    "@types/node": "^24.10.0",
+    "eslint": "^9.39.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2"
+  },
+  "private": false
+}

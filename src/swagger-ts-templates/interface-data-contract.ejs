@@ -1,0 +1,23 @@
+<%
+const { contract, utils } = it;
+const { formatDescription, require, _ } = utils;
+
+const getValidationDecorator = (field) => {
+  const type = field.value;
+  if (type === 'string' || type.includes('string')) return '@IsString()';
+  if (type === 'number' || type.includes('number')) return '@IsNumber()';
+  if (type === 'boolean' || type.includes('boolean')) return '@IsBoolean()';
+  if (field.isArray) return '@IsArray()';
+  return null;
+};
+%>
+export class <%~ contract.name %> {
+<% for (const field of contract.$content) { %>
+<%~ includeFile('./object-field-jsdoc.ejs', { ...it, field }) %>
+  <% if (field.isRequired) { %>@IsDefined()
+  <% } else { %>@IsOptional()
+  <% } %><% const validator = getValidationDecorator(field); %><% if (validator) { %><%~ validator %>
+  <% } %>@ApiProperty({ required: <%~ field.isRequired ? 'true' : 'false' %><%~ field.isNullable ? ', nullable: true' : '' %> })
+  <%~ field.name %><%~ field.isRequired ? '' : '?' %>: <%~ field.value %><%~ (field.isNullable && !field.value.includes('| null')) ? ' | null' : ''%>;
+
+<% } %>}

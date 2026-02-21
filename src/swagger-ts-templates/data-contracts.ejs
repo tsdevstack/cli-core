@@ -1,0 +1,25 @@
+<%
+const { modelTypes, utils, config } = it;
+const { formatDescription, require, _, Ts } = utils;
+%>
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsString, IsNumber, IsBoolean, IsArray, IsEnum,
+  IsOptional, IsDefined, ValidateNested, IsDateString,
+} from 'class-validator';
+
+<% if (config.internalTemplateOptions.addUtilRequiredKeysType) { %>
+type <%~ config.Ts.CodeGenKeyword.UtilRequiredKeys %><T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
+<% } %>
+
+<% for (const contract of modelTypes) { %>
+  <% if (contract.typeIdentifier === 'enum') { %>
+<%~ includeFile('./enum-data-contract.ejs', { ...it, contract }) %>
+  <% } else if (contract.typeIdentifier === 'interface') { %>
+<%~ includeFile('./interface-data-contract.ejs', { ...it, contract }) %>
+  <% } else { %>
+<%~ includeFile('./type-data-contract.ejs', { ...it, contract }) %>
+  <% } %>
+
+<% } %>
