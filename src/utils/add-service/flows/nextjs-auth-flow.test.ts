@@ -209,7 +209,19 @@ describe('nextjsAuthFlow', () => {
       });
     });
 
+    it('should run npm install before sync', async () => {
+      const config = createMockFrameworkConfig();
+
+      await nextjsAuthFlow(APP_NAME, PORT, config);
+
+      expect(spawnSync).toHaveBeenCalledWith('npm', ['install'], {
+        cwd: PROJECT_ROOT,
+        stdio: 'inherit',
+      });
+    });
+
     it('should handle sync failure gracefully with a warning', async () => {
+      // spawnSync calls: git clone (1), npm install (2), sync (3)
       rs.mocked(spawnSync)
         .mockReturnValueOnce({
           status: 0,
@@ -220,10 +232,18 @@ describe('nextjsAuthFlow', () => {
           signal: null,
         })
         .mockReturnValueOnce({
+          status: 0,
+          stdout: Buffer.from(''),
+          stderr: Buffer.from(''),
+          pid: 1235,
+          output: [],
+          signal: null,
+        })
+        .mockReturnValueOnce({
           status: 1,
           stdout: Buffer.from(''),
           stderr: Buffer.from('sync error'),
-          pid: 1235,
+          pid: 1236,
           output: [],
           signal: null,
         });

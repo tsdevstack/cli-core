@@ -8,7 +8,7 @@ import { createServiceSection } from './create-service-section';
 
 /**
  * Sync user secrets structure with current config
- * Adds missing services without touching existing ones
+ * Adds missing services and removes orphaned ones
  *
  * @param existingUserSecrets - Current user secrets file
  * @param config - Framework configuration
@@ -55,6 +55,17 @@ export function syncUserSecretsStructure(
   // Update result.secrets if any values were added
   if (updated) {
     result.secrets = currentSecrets;
+  }
+
+  // Remove orphaned service sections (services no longer in config)
+  const configServiceNames = new Set(config.services.map((s) => s.name));
+
+  for (const key of Object.keys(result)) {
+    if (key === 'secrets' || key.startsWith('$')) continue;
+    if (!configServiceNames.has(key)) {
+      delete result[key];
+      updated = true;
+    }
   }
 
   // Add missing service sections and sync existing ones

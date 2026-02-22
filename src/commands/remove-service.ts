@@ -275,7 +275,7 @@ export async function removeService(
   logger.newline();
 
   try {
-    sync();
+    sync({ operation: 'remove', removedService: resolvedServiceName });
   } catch (error) {
     logger.warn(
       `Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,

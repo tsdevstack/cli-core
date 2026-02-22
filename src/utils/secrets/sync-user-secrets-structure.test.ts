@@ -100,16 +100,13 @@ describe('syncUserSecretsStructure', () => {
           JWT_PRIVATE_KEY_CURRENT: 'existing-private',
           BCRYPT_ROUNDS: '12',
         },
-        'partner-api-keys': {
-          $comment: 'Existing',
-        },
       };
 
       const config = createMockFrameworkConfig();
 
       const result = syncUserSecretsStructure(existing, config);
 
-      // Should return null (no changes) since TTLs, APP_URL and partner-api-keys already exist
+      // Should return null (no changes) since TTLs, APP_URL already exist
       expect(result).toBeNull();
     });
   });
@@ -138,9 +135,6 @@ describe('syncUserSecretsStructure', () => {
           CONFIRMATION_TOKEN_TTL: '172800000',
           APP_URL: 'http://localhost:3000',
           DOMAIN: '',
-        },
-        'partner-api-keys': {
-          $comment: 'Existing',
         },
       };
 
@@ -234,7 +228,7 @@ describe('syncUserSecretsStructure', () => {
       ).toHaveBeenCalledWith(config.services[0]);
     });
 
-    it('should not remove existing services not in config', () => {
+    it('should remove orphaned services not in config', () => {
       const existing: SecretsFile = {
         secrets: {},
         'old-service': {
@@ -249,7 +243,7 @@ describe('syncUserSecretsStructure', () => {
       const result = syncUserSecretsStructure(existing, config);
 
       expect(result).not.toBeNull();
-      expect(result!['old-service']).toBeDefined();
+      expect(result!['old-service']).toBeUndefined();
       expect(result!['new-service']).toBeDefined();
     });
 
@@ -361,7 +355,7 @@ describe('syncUserSecretsStructure', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle empty config services', () => {
+    it('should remove orphaned services when config has no services', () => {
       const existing: SecretsFile = {
         secrets: {},
         'old-service': {
@@ -373,10 +367,10 @@ describe('syncUserSecretsStructure', () => {
 
       const result = syncUserSecretsStructure(existing, config);
 
-      // Should still preserve old service and add TTLs
+      // Should remove orphaned service and add TTLs
       expect(result).not.toBeNull();
       if (result) {
-        expect(result['old-service']).toBeDefined();
+        expect(result['old-service']).toBeUndefined();
       }
     });
 

@@ -6,15 +6,17 @@
  * This command:
  * 1. Regenerates secrets (preserving framework secrets: AUTH_SECRET, API_KEY)
  * 2. Regenerates docker-compose.yml
- * 3. Regenerates kong.yaml
- * 4a. Starts critical infrastructure (DBs, Redis) and waits for health
- * 4b. Starts remaining containers (gateway, pgAdmin, user services) without waiting
- * 5. Recreates pgAdmin (without waiting) to reload configs and clear cache
- * 6. Runs Prisma migrations + generate for all services
+ * 3. Generates OpenAPI docs for NestJS services (needed by Kong)
+ * 4. Regenerates kong.yaml
+ * 5a. Starts critical infrastructure (DBs, Redis) and waits for health
+ * 5b. Starts remaining containers (gateway, pgAdmin, user services) without waiting
+ * 6. Recreates pgAdmin (without waiting) to reload configs and clear cache
+ * 7. Runs Prisma migrations + generate for all services
  *
  * Usage: npx tsdevstack sync
  */
 
+import { spawnSync } from 'child_process';
 import { generateSecretsLocal } from './generate-secrets-local';
 import { generateDockerCompose } from './generate-docker-compose';
 import { generateKongConfig } from './generate-kong-config';
@@ -55,11 +57,26 @@ export function sync(context?: OperationContext): void {
   logger.newline();
   generateDockerCompose(context);
 
-  // Step 3: Generate Kong config
+  // Step 3: Generate OpenAPI docs (needed by Kong)
+  logger.newline();
+  logger.generating('Generating OpenAPI docs...');
+  const docsResult = spawnSync('npm', ['run', 'docs:generate'], {
+    cwd: rootDir,
+    stdio: 'pipe',
+  });
+  if (docsResult.status !== 0) {
+    logger.warn(
+      'OpenAPI docs generation had issues. Kong config may be incomplete.',
+    );
+  } else {
+    logger.success('OpenAPI docs generated');
+  }
+
+  // Step 4: Generate Kong config
   logger.newline();
   generateKongConfig(context);
 
-  // Step 4a: Start and wait for critical infrastructure (databases, redis)
+  // Step 5a: Start and wait for critical infrastructure (databases, redis)
   logger.newline();
   logger.updating('Starting critical infrastructure (databases, redis)...');
 
@@ -73,13 +90,13 @@ export function sync(context?: OperationContext): void {
   recreateContainers(criticalServices, rootDir, true);
   logger.success('Critical infrastructure ready');
 
-  // Step 4b: Start all other containers (gateway, pgAdmin, user services) without waiting
+  // Step 5b: Start all other containers (gateway, pgAdmin, user services) without waiting
   logger.newline();
   logger.updating('Starting remaining containers...');
   composeUp(rootDir, true, false);
   logger.success('All containers started');
 
-  // Step 5: Recreate pgAdmin (without waiting) to clear cache and reload configs
+  // Step 6: Recreate pgAdmin (without waiting) to clear cache and reload configs
   logger.newline();
   logger.updating('Recreating pgAdmin with fresh configs...');
   recreateContainers(['pgadmin'], rootDir, false);
@@ -125,6 +142,7 @@ export function sync(context?: OperationContext): void {
   logger.summary('Summary:');
   logger.success('Secrets regenerated (existing passwords preserved)');
   logger.success('Docker Compose regenerated');
+  logger.success('OpenAPI docs generated');
   logger.success('Kong config regenerated');
   logger.success('All containers running and healthy');
   logger.success(

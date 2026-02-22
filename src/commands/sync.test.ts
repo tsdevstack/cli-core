@@ -1,4 +1,5 @@
 import { describe, it, expect, rs, beforeEach } from '@rstest/core';
+import * as childProcessModule from 'child_process';
 import * as generateSecretsModule from './generate-secrets-local';
 import * as generateDockerComposeModule from './generate-docker-compose';
 import * as generateKongConfigModule from './generate-kong-config';
@@ -10,6 +11,7 @@ import * as findProjectRootModule from '../utils/paths/find-project-root';
 import { sync } from './sync';
 import type { FrameworkConfig } from '../utils/config';
 
+rs.mock('child_process', { mock: true });
 rs.mock('./generate-secrets-local', { mock: true });
 rs.mock('./generate-docker-compose', { mock: true });
 rs.mock('./generate-kong-config', { mock: true });
@@ -70,6 +72,16 @@ describe('sync', () => {
     rs.mocked(prismaModule.getDatabaseUrl).mockReturnValue(
       'postgresql://localhost:5432/db',
     );
+
+    // docs:generate succeeds by default
+    rs.mocked(childProcessModule.spawnSync).mockReturnValue({
+      status: 0,
+      stdout: Buffer.from(''),
+      stderr: Buffer.from(''),
+      pid: 1234,
+      output: [],
+      signal: null,
+    });
   });
 
   describe('Sub-command orchestration', () => {
@@ -123,6 +135,52 @@ describe('sync', () => {
       ).toHaveBeenCalledWith(undefined);
       expect(generateKongConfigModule.generateKongConfig).toHaveBeenCalledWith(
         undefined,
+      );
+    });
+  });
+
+  describe('OpenAPI docs generation', () => {
+    it('should run npm run docs:generate before Kong config', () => {
+      sync();
+
+      expect(childProcessModule.spawnSync).toHaveBeenCalledWith(
+        'npm',
+        ['run', 'docs:generate'],
+        { cwd: '/mock/project', stdio: 'pipe' },
+      );
+    });
+
+    it('should warn when docs:generate fails', () => {
+      rs.mocked(childProcessModule.spawnSync).mockReturnValue({
+        status: 1,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from('error'),
+        pid: 1234,
+        output: [],
+        signal: null,
+      });
+
+      sync();
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'OpenAPI docs generation had issues. Kong config may be incomplete.',
+      );
+    });
+
+    it('should still generate Kong config when docs:generate fails', () => {
+      rs.mocked(childProcessModule.spawnSync).mockReturnValue({
+        status: 1,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from('error'),
+        pid: 1234,
+        output: [],
+        signal: null,
+      });
+
+      sync();
+
+      expect(generateKongConfigModule.generateKongConfig).toHaveBeenCalledTimes(
+        1,
       );
     });
   });

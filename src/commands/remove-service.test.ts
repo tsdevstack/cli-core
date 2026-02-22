@@ -162,13 +162,17 @@ describe('removeService', () => {
   });
 
   describe('Sync', () => {
-    it('should call sync after removal', async () => {
+    it('should call sync with remove context after removal', async () => {
       rs.mocked(fs.existsSync).mockReturnValue(false);
       rs.mocked(inquirer.prompt).mockResolvedValue({ confirmed: true });
 
       await removeService('user-service', {});
 
       expect(sync).toHaveBeenCalledTimes(1);
+      expect(sync).toHaveBeenCalledWith({
+        operation: 'remove',
+        removedService: 'user-service',
+      });
     });
 
     it('should handle sync failure gracefully', async () => {

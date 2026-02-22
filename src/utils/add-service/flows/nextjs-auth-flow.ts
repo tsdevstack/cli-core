@@ -138,7 +138,24 @@ export async function nextjsAuthFlow(
   saveFrameworkConfig(config);
   logger.success(`Registered "${serviceName}" in config.json`);
 
-  // Step 7: Run sync to update docker-compose, Kong, secrets
+  // Step 7: Install dependencies (monorepo-level npm install picks up new workspace)
+  logger.newline();
+  logger.generating('Installing dependencies...');
+
+  const installResult = spawnSync('npm', ['install'], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  if (installResult.status !== 0) {
+    logger.warn(
+      'npm install had issues. You may need to run "npm install" manually from the project root.',
+    );
+  } else {
+    logger.success('Dependencies installed');
+  }
+
+  // Step 8: Run sync to update docker-compose, Kong, secrets
   logger.newline();
   logger.generating('Running sync to update infrastructure files...');
 
@@ -161,7 +178,6 @@ export async function nextjsAuthFlow(
   logger.newline();
   logger.info('Next steps:');
   logger.info(`  1. cd apps/${serviceName}`);
-  logger.info('  2. npm install');
-  logger.info('  3. npm run dev');
+  logger.info('  2. npm run dev');
   logger.newline();
 }

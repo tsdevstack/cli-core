@@ -282,7 +282,24 @@ export async function nestjsFlow(
   saveFrameworkConfig(config);
   logger.success(`Registered "${serviceName}" in config.json`);
 
-  // Step 7: Run sync to update docker-compose, Kong, secrets
+  // Step 7: Install dependencies (monorepo-level npm install picks up new workspace)
+  logger.newline();
+  logger.generating('Installing dependencies...');
+
+  const installResult = spawnSync('npm', ['install'], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  if (installResult.status !== 0) {
+    logger.warn(
+      'npm install had issues. You may need to run "npm install" manually from the project root.',
+    );
+  } else {
+    logger.success('Dependencies installed');
+  }
+
+  // Step 8: Run sync to update docker-compose, Kong, secrets
   logger.newline();
   logger.generating('Running sync to update infrastructure files...');
 
@@ -305,13 +322,12 @@ export async function nestjsFlow(
   logger.newline();
   logger.info('Next steps:');
   logger.info(`  1. cd apps/${serviceName}`);
-  logger.info('  2. npm install');
   if (includeDatabase) {
-    logger.info('  3. Update prisma/schema.prisma with your models');
-    logger.info('  4. Run: npx prisma migrate dev --name init');
-    logger.info('  5. npm run start:dev');
+    logger.info('  2. Update prisma/schema.prisma with your models');
+    logger.info('  3. Run: npx prisma migrate dev --name init');
+    logger.info('  4. npm run start:dev');
   } else {
-    logger.info('  3. npm run start:dev');
+    logger.info('  2. npm run start:dev');
   }
   logger.newline();
 }
