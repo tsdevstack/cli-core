@@ -1,4 +1,4 @@
-# @tsdevstack/cli
+# tsdevstack
 
 CLI tools and code generators for the tsdevstack full-stack TypeScript microservices framework. Scaffolds services, generates configs, and orchestrates local development.
 
@@ -13,7 +13,7 @@ CLI tools and code generators for the tsdevstack full-stack TypeScript microserv
 ## Installation
 
 ```bash
-npm install @tsdevstack/cli
+npm install tsdevstack
 ```
 
 ## Commands
@@ -38,7 +38,7 @@ Infrastructure commands (`infra:deploy`, `cloud-secrets:push`, etc.) are provide
 Plugins extend the CLI by importing the plugin context:
 
 ```typescript
-import type { PluginContext } from '@tsdevstack/cli/plugin';
+import type { PluginContext } from 'tsdevstack/plugin';
 
 export function initContext(ctx: PluginContext): void {
   // Access logger, CliError, config utilities, etc.

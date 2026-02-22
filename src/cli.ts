@@ -16,6 +16,15 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// Bundled plugins (static imports — devDependencies bundled by rslib)
+import {
+  initContext,
+  registerCloudPlugin,
+} from '@tsdevstack/cli-cloud-secrets';
+import {
+  initContext as initInfraContext,
+  registerInfraPlugin,
+} from '@tsdevstack/cli-infra';
 // Core commands
 import { generateClient } from './commands/generate-client';
 import { generateKongConfig } from './commands/generate-kong-config';
@@ -176,11 +185,8 @@ program
     }),
   );
 
-// Initialize and register plugins dynamically (avoids circular dependency at build time)
-const { initContext, registerCloudPlugin } =
-  await import('@tsdevstack/cli-cloud-secrets');
-const { initContext: initInfraContext, registerInfraPlugin } =
-  await import('@tsdevstack/cli-infra');
+// Initialize and register plugins
+// cli-mcp stays external (in dependencies) — dynamic import is fine
 const { initContext: initMcpContext, registerMcpPlugin } =
   await import('@tsdevstack/cli-mcp');
 

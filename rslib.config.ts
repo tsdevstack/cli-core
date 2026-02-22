@@ -3,9 +3,10 @@ import { defineConfig } from '@rslib/core';
 export default defineConfig({
   lib: [
     {
+      // CLI binary — bundles private packages (devDeps), externalizes cloud SDKs (deps)
       format: 'esm',
       syntax: ['node 18'],
-      dts: false, // CLI binary doesn't need declarations - plugin types exported from source
+      dts: false,
       autoExternal: true,
       source: {
         entry: {
@@ -14,10 +15,26 @@ export default defineConfig({
       },
       output: {
         minify: true,
+        externals: ['tsdevstack', 'tsdevstack/plugin'],
         copy: [
           { from: './src/templates', to: './templates' },
           { from: './src/swagger-ts-templates', to: './swagger-ts-templates' },
         ],
+      },
+    },
+    {
+      // Plugin API — JS + types for external consumers (cli-mcp)
+      format: 'esm',
+      syntax: ['node 18'],
+      dts: true,
+      autoExternal: true,
+      source: {
+        entry: {
+          'plugin/index': './src/plugin/index.ts',
+        },
+      },
+      output: {
+        externals: ['tsdevstack', 'tsdevstack/plugin'],
       },
     },
   ],
