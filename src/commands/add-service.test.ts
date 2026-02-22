@@ -13,6 +13,7 @@ rs.mock('../utils/validation/validate-service-name', { mock: true });
 rs.mock('../utils/add-service/get-next-port', { mock: true });
 rs.mock('../utils/add-service/flows/spa-flow', { mock: true });
 rs.mock('../utils/add-service/flows/nextjs-flow', { mock: true });
+rs.mock('../utils/add-service/flows/nextjs-auth-flow', { mock: true });
 rs.mock('../utils/add-service/flows/nestjs-flow', { mock: true });
 
 import { addService } from './add-service';
@@ -24,6 +25,7 @@ import { validateServiceName } from '../utils/validation/validate-service-name';
 import { getNextPort } from '../utils/add-service/get-next-port';
 import { spaFlow } from '../utils/add-service/flows/spa-flow';
 import { nextjsFlow } from '../utils/add-service/flows/nextjs-flow';
+import { nextjsAuthFlow } from '../utils/add-service/flows/nextjs-auth-flow';
 import { nestjsFlow } from '../utils/add-service/flows/nestjs-flow';
 import { createMockFrameworkConfig } from '../test-fixtures/framework-config';
 
@@ -42,6 +44,7 @@ describe('addService', () => {
     // Default flow mocks resolve successfully
     rs.mocked(spaFlow).mockResolvedValue(undefined);
     rs.mocked(nextjsFlow).mockResolvedValue(undefined);
+    rs.mocked(nextjsAuthFlow).mockResolvedValue(undefined);
     rs.mocked(nestjsFlow).mockResolvedValue(undefined);
   });
 
@@ -115,6 +118,7 @@ describe('addService', () => {
 
       expect(spaFlow).toHaveBeenCalledOnce();
       expect(nextjsFlow).not.toHaveBeenCalled();
+      expect(nextjsAuthFlow).not.toHaveBeenCalled();
       expect(nestjsFlow).not.toHaveBeenCalled();
     });
 
@@ -123,6 +127,16 @@ describe('addService', () => {
 
       expect(nextjsFlow).toHaveBeenCalledOnce();
       expect(spaFlow).not.toHaveBeenCalled();
+      expect(nextjsAuthFlow).not.toHaveBeenCalled();
+      expect(nestjsFlow).not.toHaveBeenCalled();
+    });
+
+    it('should route to nextjsAuthFlow for type nextjs-auth', async () => {
+      await addService({ type: 'nextjs-auth', name: 'my-app' });
+
+      expect(nextjsAuthFlow).toHaveBeenCalledOnce();
+      expect(spaFlow).not.toHaveBeenCalled();
+      expect(nextjsFlow).not.toHaveBeenCalled();
       expect(nestjsFlow).not.toHaveBeenCalled();
     });
 
@@ -132,6 +146,7 @@ describe('addService', () => {
       expect(nestjsFlow).toHaveBeenCalledOnce();
       expect(spaFlow).not.toHaveBeenCalled();
       expect(nextjsFlow).not.toHaveBeenCalled();
+      expect(nextjsAuthFlow).not.toHaveBeenCalled();
     });
 
     it('should pass correct arguments to flow: name, port, config', async () => {
@@ -140,6 +155,36 @@ describe('addService', () => {
       await addService({ type: 'spa', name: 'dashboard' });
 
       expect(spaFlow).toHaveBeenCalledWith('dashboard', 3005, mockConfig);
+    });
+  });
+
+  describe('Auth service warning', () => {
+    it('should warn when nextjs-auth selected but no auth-service exists', async () => {
+      const noAuthConfig = createMockFrameworkConfig({ services: [] });
+      rs.mocked(loadFrameworkConfig).mockReturnValue(noAuthConfig);
+
+      await addService({ type: 'nextjs-auth', name: 'my-frontend' });
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        'No auth-service found in your project. The Next.js auth template requires an auth-service to function.',
+      );
+    });
+
+    it('should not warn when nextjs-auth selected and auth-service exists', async () => {
+      await addService({ type: 'nextjs-auth', name: 'my-frontend' });
+
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('No auth-service found'),
+      );
+    });
+
+    it('should not warn for other service types', async () => {
+      const noAuthConfig = createMockFrameworkConfig({ services: [] });
+      rs.mocked(loadFrameworkConfig).mockReturnValue(noAuthConfig);
+
+      await addService({ type: 'nextjs', name: 'my-frontend' });
+
+      expect(logger.warn).not.toHaveBeenCalled();
     });
   });
 

@@ -1,14 +1,13 @@
 /**
- * Tests for nestjsFlow
+ * Tests for nextjsAuthFlow
  */
 
 import { describe, it, expect, rs, beforeEach } from '@rstest/core';
-import { nestjsFlow } from './nestjs-flow';
+import { nextjsAuthFlow } from './nextjs-auth-flow';
 
 // Mock dependencies
 rs.mock('child_process', { mock: true });
 rs.mock('fs', { mock: true });
-rs.mock('inquirer', { mock: true });
 rs.mock('../../config', { mock: true });
 rs.mock('../../logger', { mock: true });
 rs.mock('../../paths', { mock: true });
@@ -17,7 +16,6 @@ rs.mock('../resolve-template-versions', { mock: true });
 
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
-import inquirer from 'inquirer';
 import { saveFrameworkConfig } from '../../config';
 import { logger } from '../../logger';
 import { findProjectRoot } from '../../paths';
@@ -26,13 +24,13 @@ import {
   extractAuthor,
   deleteFolderRecursive,
 } from '../../fs';
-import { NESTJS_TEMPLATE_REPO } from '../../../constants';
+import { NEXTJS_AUTH_TEMPLATE_REPO } from '../../../constants';
 import { resolveTemplateVersions } from '../resolve-template-versions';
 import { createMockFrameworkConfig } from '../../../test-fixtures/framework-config';
 
-describe('nestjsFlow', () => {
+describe('nextjsAuthFlow', () => {
   const PROJECT_ROOT = '/fake/project';
-  const SERVICE_NAME = 'order-service';
+  const APP_NAME = 'my-frontend';
   const PORT = 3002;
 
   beforeEach(() => {
@@ -49,9 +47,6 @@ describe('nestjsFlow', () => {
 
     // Directory does not exist by default
     rs.mocked(fs.existsSync).mockReturnValue(false);
-
-    // Inquirer returns includeDatabase: true by default
-    rs.mocked(inquirer.prompt).mockResolvedValue({ includeDatabase: true });
 
     // Git clone succeeds
     rs.mocked(spawnSync).mockReturnValue({
@@ -71,31 +66,13 @@ describe('nestjsFlow', () => {
 
   describe('directory existence check', () => {
     it('should throw when app directory already exists', async () => {
-      // First call: appPath exists check → true
       rs.mocked(fs.existsSync).mockReturnValue(true);
 
       const config = createMockFrameworkConfig();
 
-      await expect(nestjsFlow(SERVICE_NAME, PORT, config)).rejects.toThrow(
-        `Directory already exists: apps/${SERVICE_NAME}`,
+      await expect(nextjsAuthFlow(APP_NAME, PORT, config)).rejects.toThrow(
+        `Directory already exists: apps/${APP_NAME}`,
       );
-    });
-  });
-
-  describe('database prompt', () => {
-    it('should prompt user for database inclusion', async () => {
-      const config = createMockFrameworkConfig();
-
-      await nestjsFlow(SERVICE_NAME, PORT, config);
-
-      expect(inquirer.prompt).toHaveBeenCalledWith([
-        {
-          type: 'confirm',
-          name: 'includeDatabase',
-          message: 'Include database (Prisma)?',
-          default: true,
-        },
-      ]);
     });
   });
 
@@ -103,12 +80,12 @@ describe('nestjsFlow', () => {
     it('should clone template with correct git arguments', async () => {
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      const expectedAppPath = `${PROJECT_ROOT}/apps/${SERVICE_NAME}`;
+      const expectedAppPath = `${PROJECT_ROOT}/apps/${APP_NAME}`;
       expect(spawnSync).toHaveBeenCalledWith(
         'git',
-        ['clone', '--depth', '1', NESTJS_TEMPLATE_REPO, expectedAppPath],
+        ['clone', '--depth', '1', NEXTJS_AUTH_TEMPLATE_REPO, expectedAppPath],
         {
           cwd: PROJECT_ROOT,
           stdio: 'pipe',
@@ -128,7 +105,7 @@ describe('nestjsFlow', () => {
 
       const config = createMockFrameworkConfig();
 
-      await expect(nestjsFlow(SERVICE_NAME, PORT, config)).rejects.toThrow(
+      await expect(nextjsAuthFlow(APP_NAME, PORT, config)).rejects.toThrow(
         'Failed to clone template repository.',
       );
     });
@@ -136,62 +113,48 @@ describe('nestjsFlow', () => {
 
   describe('.git directory removal', () => {
     it('should remove .git directory after clone', async () => {
-      // existsSync: false for appPath check, true for .git dir check
       rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
         const p = String(path);
-        if (p === `${PROJECT_ROOT}/apps/${SERVICE_NAME}`) return false;
+        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
         if (p.endsWith('.git')) return true;
         return false;
       });
 
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(deleteFolderRecursive).toHaveBeenCalledWith(
-        `${PROJECT_ROOT}/apps/${SERVICE_NAME}/.git`,
+        `${PROJECT_ROOT}/apps/${APP_NAME}/.git`,
       );
     });
   });
 
-  describe('service config registration', () => {
-    it('should register service in config with correct shape when includeDatabase is true', async () => {
-      rs.mocked(inquirer.prompt).mockResolvedValue({ includeDatabase: true });
-
-      const config = createMockFrameworkConfig();
-
-      await nestjsFlow(SERVICE_NAME, PORT, config);
-
-      expect(config.services).toHaveLength(1);
-      expect(config.services[0]).toEqual({
-        name: 'order-service',
-        type: 'nestjs',
-        port: PORT,
-        globalPrefix: 'order',
-        hasDatabase: true,
-        databaseType: 'postgresql',
+  describe('placeholder replacement', () => {
+    it('should replace placeholders in package.json', async () => {
+      rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
+        const p = String(path);
+        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
+        if (p.includes('package.json') && p.includes(APP_NAME)) return true;
+        return false;
       });
-    });
-
-    it('should set databaseType to postgresql when includeDatabase is true', async () => {
-      rs.mocked(inquirer.prompt).mockResolvedValue({ includeDatabase: true });
 
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      expect(config.services[0]?.databaseType).toBe('postgresql');
-    });
+      // Verify readFileSync was called for package.json
+      expect(fs.readFileSync).toHaveBeenCalledWith(
+        `${PROJECT_ROOT}/apps/${APP_NAME}/package.json`,
+        'utf-8',
+      );
 
-    it('should not set databaseType when includeDatabase is false', async () => {
-      rs.mocked(inquirer.prompt).mockResolvedValue({ includeDatabase: false });
-
-      const config = createMockFrameworkConfig();
-
-      await nestjsFlow(SERVICE_NAME, PORT, config);
-
-      expect(config.services[0]?.databaseType).toBeUndefined();
-      expect(config.services[0]?.hasDatabase).toBe(false);
+      // Verify writeFileSync was called with replaced content
+      const writeFileCalls = rs.mocked(fs.writeFileSync).mock.calls;
+      const placeholderWriteCall = writeFileCalls.find(
+        (call) => typeof call[1] === 'string' && call[1].includes(APP_NAME),
+      );
+      expect(placeholderWriteCall).toBeDefined();
     });
   });
 
@@ -199,7 +162,7 @@ describe('nestjsFlow', () => {
     it('should call resolveTemplateVersions with package.json and project root', async () => {
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(resolveTemplateVersions).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'test-project' }),
@@ -208,29 +171,19 @@ describe('nestjsFlow', () => {
     });
   });
 
-  describe('globalPrefix derivation', () => {
-    it('should derive globalPrefix by removing -service suffix', async () => {
+  describe('service config registration', () => {
+    it('should register service in config with correct shape', async () => {
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow('order-service', PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      expect(config.services[0]?.globalPrefix).toBe('order');
-    });
-
-    it('should handle multi-word service names', async () => {
-      const config = createMockFrameworkConfig();
-
-      await nestjsFlow('user-auth-service', PORT, config);
-
-      expect(config.services[0]?.globalPrefix).toBe('user-auth');
-    });
-
-    it('should keep name as-is if it does not end with -service', async () => {
-      const config = createMockFrameworkConfig();
-
-      await nestjsFlow('notifications', PORT, config);
-
-      expect(config.services[0]?.globalPrefix).toBe('notifications');
+      expect(config.services).toHaveLength(1);
+      expect(config.services[0]).toEqual({
+        name: 'my-frontend',
+        type: 'nextjs',
+        port: PORT,
+        hasDatabase: false,
+      });
     });
   });
 
@@ -238,7 +191,7 @@ describe('nestjsFlow', () => {
     it('should save framework config after registering service', async () => {
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(saveFrameworkConfig).toHaveBeenCalledWith(config);
     });
@@ -248,7 +201,7 @@ describe('nestjsFlow', () => {
     it('should run sync command via spawnSync', async () => {
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(spawnSync).toHaveBeenCalledWith('npx', ['tsdevstack', 'sync'], {
         cwd: PROJECT_ROOT,
@@ -257,7 +210,6 @@ describe('nestjsFlow', () => {
     });
 
     it('should handle sync failure gracefully with a warning', async () => {
-      // First spawnSync call (git clone) succeeds, second (npx sync) fails
       rs.mocked(spawnSync)
         .mockReturnValueOnce({
           status: 0,
@@ -278,8 +230,7 @@ describe('nestjsFlow', () => {
 
       const config = createMockFrameworkConfig();
 
-      // Should not throw
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(logger.warn).toHaveBeenCalledWith(
         'Sync command had issues. You may need to run "npx tsdevstack sync" manually.',
@@ -293,7 +244,7 @@ describe('nestjsFlow', () => {
 
       const config = createMockFrameworkConfig();
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
       expect(findProjectRoot).toHaveBeenCalled();
       expect(readPackageJsonFrom).toHaveBeenCalledWith(PROJECT_ROOT);
@@ -305,38 +256,20 @@ describe('nestjsFlow', () => {
 
       const config = createMockFrameworkConfig();
 
-      // Enable existsSync to track placeholder file checks
       rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
         const p = String(path);
-        if (p === `${PROJECT_ROOT}/apps/${SERVICE_NAME}`) return false;
-        // Return true for placeholder files so we can verify content
-        if (p.includes('package.json') && p.includes(SERVICE_NAME)) return true;
+        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
+        if (p.includes('package.json') && p.includes(APP_NAME)) return true;
         return false;
       });
 
-      await nestjsFlow(SERVICE_NAME, PORT, config);
+      await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      // The author should have been resolved to 'tsdevstack'
-      // We verify by checking that writeFileSync was called with content containing 'tsdevstack'
       const writeFileCalls = rs.mocked(fs.writeFileSync).mock.calls;
       const placeholderWriteCall = writeFileCalls.find(
         (call) => typeof call[1] === 'string' && call[1].includes('tsdevstack'),
       );
       expect(placeholderWriteCall).toBeDefined();
-    });
-
-    it('should fall back to tsdevstack when readPackageJsonFrom throws', async () => {
-      rs.mocked(readPackageJsonFrom).mockImplementation(() => {
-        throw new Error('package.json not found');
-      });
-
-      const config = createMockFrameworkConfig();
-
-      // Should not throw - falls back gracefully
-      await nestjsFlow(SERVICE_NAME, PORT, config);
-
-      // Verify the flow completed (config was saved)
-      expect(saveFrameworkConfig).toHaveBeenCalledWith(config);
     });
   });
 });

@@ -20,6 +20,7 @@ import {
   deleteFolderRecursive,
 } from '../../fs';
 import { NESTJS_TEMPLATE_REPO } from '../../../constants';
+import { resolveTemplateVersions } from '../resolve-template-versions';
 
 /**
  * Get author from root package.json
@@ -50,7 +51,7 @@ function deriveGlobalPrefix(serviceName: string): string {
  */
 function replacePlaceholdersInFile(
   filePath: string,
-  replacements: Record<string, string>
+  replacements: Record<string, string>,
 ): void {
   if (!fs.existsSync(filePath)) {
     return;
@@ -68,7 +69,11 @@ function replacePlaceholdersInFile(
 /**
  * Replace placeholders in all relevant files
  */
-function replaceAllPlaceholders(appPath: string, serviceName: string, author: string): void {
+function replaceAllPlaceholders(
+  appPath: string,
+  serviceName: string,
+  author: string,
+): void {
   const replacements: Record<string, string> = {
     '\\{\\{SERVICE_NAME\\}\\}': serviceName,
     '\\{\\{AUTHOR\\}\\}': author,
@@ -112,7 +117,10 @@ function removePrisma(appPath: string): void {
     let content = fs.readFileSync(appModulePath, 'utf-8');
 
     // Remove PrismaModule import line
-    content = content.replace(/import\s*\{[^}]*PrismaModule[^}]*\}\s*from\s*['"][^'"]+['"];\n?/g, '');
+    content = content.replace(
+      /import\s*\{[^}]*PrismaModule[^}]*\}\s*from\s*['"][^'"]+['"];\n?/g,
+      '',
+    );
 
     // Remove PrismaModule from imports array
     content = content.replace(/,?\s*PrismaModule\s*,?/g, (match) => {
@@ -132,13 +140,19 @@ function removePrisma(appPath: string): void {
     const packageJson = readPackageJsonFrom(appPath);
 
     // Remove from dependencies
-    if (packageJson.dependencies && typeof packageJson.dependencies === 'object') {
+    if (
+      packageJson.dependencies &&
+      typeof packageJson.dependencies === 'object'
+    ) {
       const deps = packageJson.dependencies as Record<string, string>;
       delete deps['@prisma/client'];
     }
 
     // Remove from devDependencies
-    if (packageJson.devDependencies && typeof packageJson.devDependencies === 'object') {
+    if (
+      packageJson.devDependencies &&
+      typeof packageJson.devDependencies === 'object'
+    ) {
       const devDeps = packageJson.devDependencies as Record<string, string>;
       delete devDeps['prisma'];
     }
@@ -149,7 +163,11 @@ function removePrisma(appPath: string): void {
       const keysToRemove = Object.keys(scripts).filter((key) => {
         const value = scripts[key] ?? '';
         // Check both key and value for prisma references
-        return key.includes('prisma') || key.includes('db:') || value.includes('prisma');
+        return (
+          key.includes('prisma') ||
+          key.includes('db:') ||
+          value.includes('prisma')
+        );
       });
       for (const key of keysToRemove) {
         delete scripts[key];
@@ -166,7 +184,7 @@ function removePrisma(appPath: string): void {
 export async function nestjsFlow(
   serviceName: string,
   port: number,
-  config: FrameworkConfig
+  config: FrameworkConfig,
 ): Promise<void> {
   const projectRoot = findProjectRoot();
   const appPath = join(projectRoot, 'apps', serviceName);
@@ -192,15 +210,19 @@ export async function nestjsFlow(
   logger.generating('Cloning NestJS template...');
 
   // Step 2: Clone template repo
-  const cloneResult = spawnSync('git', ['clone', '--depth', '1', NESTJS_TEMPLATE_REPO, appPath], {
-    cwd: projectRoot,
-    stdio: 'pipe',
-  });
+  const cloneResult = spawnSync(
+    'git',
+    ['clone', '--depth', '1', NESTJS_TEMPLATE_REPO, appPath],
+    {
+      cwd: projectRoot,
+      stdio: 'pipe',
+    },
+  );
 
   if (cloneResult.status !== 0) {
     const errorOutput = cloneResult.stderr?.toString() || 'Unknown error';
     throw new Error(
-      `Failed to clone template repository.\n${errorOutput}\nMake sure git is installed and you have internet access.`
+      `Failed to clone template repository.\n${errorOutput}\nMake sure git is installed and you have internet access.`,
     );
   }
 
@@ -218,16 +240,20 @@ export async function nestjsFlow(
   replaceAllPlaceholders(appPath, serviceName, author);
   logger.success('Placeholders replaced');
 
-  // Step 4b: Remove template repository metadata from package.json
+  // Step 4b: Remove template repository metadata and resolve dependency versions
   try {
     const packageJson = readPackageJsonFrom(appPath);
     delete (packageJson as Record<string, unknown>).repository;
     delete (packageJson as Record<string, unknown>).homepage;
     delete (packageJson as Record<string, unknown>).bugs;
+
+    // Resolve dependency versions against user's project
+    resolveTemplateVersions(packageJson, projectRoot);
+
     writePackageJson(appPath, packageJson);
-    logger.info('Removed template repository metadata');
+    logger.success('Package.json updated');
   } catch {
-    logger.warn('Could not remove template repository metadata from package.json');
+    logger.warn('Could not update package.json metadata');
   }
 
   // Step 5: Remove Prisma if not needed
@@ -266,7 +292,9 @@ export async function nestjsFlow(
   });
 
   if (syncResult.status !== 0) {
-    logger.warn('Sync command had issues. You may need to run "npx tsdevstack sync" manually.');
+    logger.warn(
+      'Sync command had issues. You may need to run "npx tsdevstack sync" manually.',
+    );
   } else {
     logger.success('Sync completed');
   }

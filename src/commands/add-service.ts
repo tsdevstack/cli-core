@@ -4,6 +4,7 @@
  * Interactive command to scaffold new apps:
  * - SPA (rsbuild): React, Vue, Solid, Svelte, Vanilla
  * - Next.js: Full-stack frontend with standalone output
+ * - Next.js with Auth: Full auth flow (cloned from template)
  * - NestJS: Backend service with optional database
  *
  * Usage:
@@ -19,9 +20,10 @@ import { validateServiceName } from '../utils/validation/validate-service-name';
 import { getNextPort } from '../utils/add-service/get-next-port';
 import { spaFlow } from '../utils/add-service/flows/spa-flow';
 import { nextjsFlow } from '../utils/add-service/flows/nextjs-flow';
+import { nextjsAuthFlow } from '../utils/add-service/flows/nextjs-auth-flow';
 import { nestjsFlow } from '../utils/add-service/flows/nestjs-flow';
 
-export type ServiceType = 'spa' | 'nextjs' | 'nestjs';
+export type ServiceType = 'spa' | 'nextjs' | 'nextjs-auth' | 'nestjs';
 
 export interface AddServiceOptions {
   name?: string;
@@ -36,6 +38,10 @@ const SERVICE_TYPE_CHOICES = [
   {
     name: 'Next.js - Full-stack React framework',
     value: 'nextjs',
+  },
+  {
+    name: 'Next.js with Auth - Full auth flow (requires auth-service)',
+    value: 'nextjs-auth',
   },
   {
     name: 'NestJS - Backend service (must end with -service)',
@@ -66,12 +72,25 @@ export async function addService(options: AddServiceOptions): Promise<void> {
     serviceType = typeAnswer.type as ServiceType;
   }
 
+  // Warn if Next.js with Auth is selected but no auth-service exists
+  if (serviceType === 'nextjs-auth') {
+    const hasAuthService = config.services.some((s) =>
+      s.name.includes('auth-service'),
+    );
+    if (!hasAuthService) {
+      logger.warn(
+        'No auth-service found in your project. The Next.js auth template requires an auth-service to function.',
+      );
+    }
+  }
+
   // Step 2: Get service name
   let serviceName = options.name;
   if (!serviceName) {
-    const namePrompt = serviceType === 'nestjs'
-      ? 'Service name (must end with -service):'
-      : 'App name:';
+    const namePrompt =
+      serviceType === 'nestjs'
+        ? 'Service name (must end with -service):'
+        : 'App name:';
 
     const nameAnswer = await inquirer.prompt([
       {
@@ -125,6 +144,9 @@ export async function addService(options: AddServiceOptions): Promise<void> {
       break;
     case 'nextjs':
       await nextjsFlow(name, port, config);
+      break;
+    case 'nextjs-auth':
+      await nextjsAuthFlow(name, port, config);
       break;
     case 'nestjs':
       await nestjsFlow(name, port, config);
