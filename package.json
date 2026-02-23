@@ -1,6 +1,6 @@
 {
   "name": "tsdevstack",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
   "license": "MIT",
@@ -81,7 +81,7 @@
     "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/service-usage": "^4.0.0",
     "@google-cloud/storage": "^7.18.0",
-    "@tsdevstack/cli-mcp": "0.1.0",
+    "@tsdevstack/cli-mcp": "^0.1.0",
     "axios": "^1.12.2",
     "commander": "^12.0.0",
     "google-auth-library": "^10.5.0",
@@ -108,7 +108,7 @@
     "typescript-eslint": "^8.46.2"
   },
   "publishConfig": {
-    "access": "restricted",
+    "access": "public",
     "exports": {
       "./plugin": {
         "types": "./dist/plugin/index.d.ts",
