@@ -33,6 +33,8 @@ import { generateSecretsLocal } from './commands/generate-secrets-local';
 import { generateDockerCompose } from './commands/generate-docker-compose';
 import { sync } from './commands/sync';
 import { addService } from './commands/add-service';
+import { init } from './commands/init';
+import type { InitCliArgs } from './commands/init';
 import { removeService } from './commands/remove-service';
 import { registerDetachedWorker } from './commands/register-detached-worker';
 import { unregisterDetachedWorker } from './commands/unregister-detached-worker';
@@ -128,6 +130,22 @@ program
   .action(
     wrapCommand(async () => {
       sync();
+    }),
+  );
+
+program
+  .command('init')
+  .description('Create a new tsdevstack project')
+  .option('-n, --name <name>', 'Project name')
+  .option('-t, --template <template>', 'Template (empty, auth, fullstack-auth)')
+  .option(
+    '-f, --frontend-name <name>',
+    'Frontend app name (for fullstack-auth)',
+  )
+  .option('-c, --cloud <provider>', 'Cloud provider (gcp, aws, azure)')
+  .action(
+    wrapCommand(async (options: InitCliArgs) => {
+      await init(options);
     }),
   );
 

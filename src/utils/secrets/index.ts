@@ -9,6 +9,7 @@
 export * from './types';
 
 // Loaders (used by commands and utilities)
+export * from './load-local-secrets-file';
 export * from './load-local-secrets';
 export * from './load-framework-secrets';
 export * from './load-user-secrets';

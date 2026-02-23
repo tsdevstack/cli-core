@@ -20,6 +20,7 @@ npm install tsdevstack
 
 | Command | Description |
 |---------|-------------|
+| `init` | Create a new tsdevstack project |
 | `sync` | Regenerate all local config (secrets, docker-compose, Kong) |
 | `generate-secrets` | Generate local secrets files |
 | `generate-kong` | Generate Kong gateway config from OpenAPI specs |
@@ -65,16 +66,27 @@ src/
 ├── plugin/             # Plugin context and type exports
 ├── test-utils/         # Test helpers for plugins
 └── utils/
+    ├── add-service/    # Service scaffolding flows
+    ├── ci/             # CI environment detection
     ├── cloud/          # Cloud provider utilities (GCP, AWS, Azure)
     ├── config/         # Framework config loading
+    ├── credentials/    # Cloud credential management
     ├── docker/         # Docker compose and Dockerfile generators
+    ├── environment/    # Environment utilities
     ├── errors/         # CliError, wrapCommand
+    ├── exec/           # Shell command execution
     ├── fs/             # File system utilities
+    ├── init/           # Project initialization
     ├── kong/           # Kong config generation from OpenAPI
     ├── logger/         # CLI logger with icons and colors
+    ├── openapi/        # OpenAPI spec parsing and route extraction
     ├── paths/          # Path resolution
     ├── prisma/         # Database migration utilities
-    └── secrets/        # Local secrets generation
+    ├── secrets/        # Local secrets generation
+    ├── service/        # Service discovery and metadata
+    ├── template/       # Template cloning and placeholder replacement
+    ├── types/          # Shared type definitions
+    └── validation/     # Input and credential validation
 ```
 
 ## License

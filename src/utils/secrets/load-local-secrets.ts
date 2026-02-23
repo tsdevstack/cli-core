@@ -2,37 +2,10 @@
  * Load and flatten .secrets.local.json to key-value pairs
  */
 
-import * as path from 'path';
-import { readJsonFile } from '../fs';
-import { CliError } from '../errors';
-import { LOCAL_SECRETS_FILE } from '../../constants';
 import { findProjectRoot } from '../paths';
-import type { SecretsFile, Secrets } from './types';
+import type { Secrets } from './types';
+import { loadLocalSecretsFile } from './load-local-secrets-file';
 import { toScreamingSnakeCase } from './to-screaming-snake-case';
-
-/**
- * Load the full .secrets.local.json file (SecretsFile structure)
- *
- * @param rootDir - Project root directory (defaults to findProjectRoot())
- * @returns Full secrets file structure
- * @throws {CliError} If secrets file not found
- */
-export function loadLocalSecretsFile(
-  rootDir: string = findProjectRoot(),
-): SecretsFile {
-  const secretsPath = path.join(rootDir, LOCAL_SECRETS_FILE);
-
-  try {
-    return readJsonFile<SecretsFile>(secretsPath);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new CliError(
-      `Expected ${LOCAL_SECRETS_FILE} in project root. ${errorMessage}`,
-      'Secrets file not found',
-      'Run: npx tsdevstack generate-secrets',
-    );
-  }
-}
 
 /**
  * Load .secrets.local.json and flatten to simple key-value pairs
@@ -94,7 +67,10 @@ export function loadLocalSecrets(
             const password = match[2];
             // Store as SERVICE_DB_PASSWORD (e.g., AUTH_DB_PASSWORD)
             // Remove '-service' suffix first, then convert to SCREAMING_SNAKE_CASE
-            const serviceNameWithoutSuffix = serviceName.replace(/-service$/, '');
+            const serviceNameWithoutSuffix = serviceName.replace(
+              /-service$/,
+              '',
+            );
             const prefix = toScreamingSnakeCase(serviceNameWithoutSuffix);
             resolved[`${prefix}_DB_PASSWORD`] = password;
             resolved[`${prefix}_DB_USER`] = username;

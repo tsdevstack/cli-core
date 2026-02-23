@@ -19,6 +19,11 @@ import {
   writePackageJson,
   deleteFolderRecursive,
 } from '../../fs';
+import {
+  replacePlaceholdersInFile,
+  cloneTemplateRepo,
+  removeTemplateMetadata,
+} from '../../template';
 import { NESTJS_TEMPLATE_REPO } from '../../../constants';
 import { resolveTemplateVersions } from '../resolve-template-versions';
 
@@ -44,26 +49,6 @@ function getAuthor(): string {
  */
 function deriveGlobalPrefix(serviceName: string): string {
   return serviceName.replace(/-service$/, '');
-}
-
-/**
- * Replace placeholders in a file
- */
-function replacePlaceholdersInFile(
-  filePath: string,
-  replacements: Record<string, string>,
-): void {
-  if (!fs.existsSync(filePath)) {
-    return;
-  }
-
-  let content = fs.readFileSync(filePath, 'utf-8');
-
-  for (const [placeholder, value] of Object.entries(replacements)) {
-    content = content.replace(new RegExp(placeholder, 'g'), value);
-  }
-
-  fs.writeFileSync(filePath, content, 'utf-8');
 }
 
 /**
@@ -209,51 +194,24 @@ export async function nestjsFlow(
   logger.newline();
   logger.generating('Cloning NestJS template...');
 
-  // Step 2: Clone template repo
-  const cloneResult = spawnSync(
-    'git',
-    ['clone', '--depth', '1', NESTJS_TEMPLATE_REPO, appPath],
-    {
-      cwd: projectRoot,
-      stdio: 'pipe',
-    },
-  );
-
-  if (cloneResult.status !== 0) {
-    const errorOutput = cloneResult.stderr?.toString() || 'Unknown error';
-    throw new Error(
-      `Failed to clone template repository.\n${errorOutput}\nMake sure git is installed and you have internet access.`,
-    );
-  }
-
-  logger.success('Template cloned');
-
-  // Step 3: Remove .git directory
-  const gitDir = join(appPath, '.git');
-  if (fs.existsSync(gitDir)) {
-    deleteFolderRecursive(gitDir);
-    logger.info('Removed .git directory');
-  }
+  // Step 2: Clone template repo and remove .git
+  cloneTemplateRepo(NESTJS_TEMPLATE_REPO, appPath);
 
   // Step 4: Replace placeholders
   logger.generating('Replacing placeholders...');
   replaceAllPlaceholders(appPath, serviceName, author);
   logger.success('Placeholders replaced');
 
-  // Step 4b: Remove template repository metadata and resolve dependency versions
+  // Step 4b: Remove template repository metadata
+  removeTemplateMetadata(appPath);
+
+  // Step 4c: Resolve dependency versions against user's project
   try {
     const packageJson = readPackageJsonFrom(appPath);
-    delete (packageJson as Record<string, unknown>).repository;
-    delete (packageJson as Record<string, unknown>).homepage;
-    delete (packageJson as Record<string, unknown>).bugs;
-
-    // Resolve dependency versions against user's project
     resolveTemplateVersions(packageJson, projectRoot);
-
     writePackageJson(appPath, packageJson);
-    logger.success('Package.json updated');
   } catch {
-    logger.warn('Could not update package.json metadata');
+    logger.warn('Could not resolve template dependency versions');
   }
 
   // Step 5: Remove Prisma if not needed

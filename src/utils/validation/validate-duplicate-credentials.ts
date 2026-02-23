@@ -16,7 +16,7 @@ import type {
  */
 export function validateDuplicateCredentials(
   allCredentials: Record<string, unknown>,
-  provider: CloudProvider
+  provider: CloudProvider,
 ): void {
   const environments = Object.keys(allCredentials);
 
@@ -64,7 +64,7 @@ export function validateDuplicateCredentials(
   seenValues.forEach((envs, value) => {
     if (envs.length > 1) {
       duplicates.push(
-        `${fieldName} "${value}" is used by environments: ${envs.join(', ')}`
+        `${fieldName} "${value}" is used by environments: ${envs.join(', ')}`,
       );
     }
   });
@@ -80,7 +80,8 @@ export function validateDuplicateCredentials(
           : provider === 'aws'
             ? 'AWS accounts'
             : 'Azure subscriptions'
-      }.\n` + `See: https://github.com/tsdevstack/docs/environment-isolation-policy`
+      }.\n` +
+        `See: https://tsdevstack.dev/infrastructure/environments#environment-isolation`,
     );
   }
 }

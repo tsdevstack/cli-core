@@ -23,6 +23,7 @@ export default [
     ignores: [
       'dist/',
       'coverage/',
+      'scripts/',
       '*.config.ts',
       '*.config.mjs',
       'eslint.config.mjs',

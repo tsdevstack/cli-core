@@ -7,7 +7,7 @@ import { logger } from '../logger';
 import { LOCAL_SECRETS_FILE, USER_SECRETS_FILE } from '../../constants';
 import { findProjectRoot } from '../paths';
 import { writeTextFile } from '../fs';
-import { loadLocalSecretsFile } from './load-local-secrets';
+import { loadLocalSecretsFile } from './load-local-secrets-file';
 
 /**
  * Generate .env file from .secrets.local.json
@@ -47,7 +47,11 @@ export function generateEnvFile(rootDir: string = findProjectRoot()): void {
   for (const [serviceName, serviceConfig] of Object.entries(secretsFile)) {
     if (serviceName === 'secrets' || serviceName.startsWith('$')) continue;
 
-    if (serviceConfig && typeof serviceConfig === 'object' && 'DATABASE_URL' in serviceConfig) {
+    if (
+      serviceConfig &&
+      typeof serviceConfig === 'object' &&
+      'DATABASE_URL' in serviceConfig
+    ) {
       const dbUrl = serviceConfig.DATABASE_URL as string;
       if (typeof dbUrl === 'string') {
         // Extract user and password from postgresql://user:password@host:port/database
@@ -55,7 +59,10 @@ export function generateEnvFile(rootDir: string = findProjectRoot()): void {
         if (match) {
           // Remove -service suffix to match docker-compose generator
           // auth-service → auth → AUTH_DB_USER
-          const dbName = serviceName.replace(/-service$/, '').replace(/-/g, '_').toUpperCase();
+          const dbName = serviceName
+            .replace(/-service$/, '')
+            .replace(/-/g, '_')
+            .toUpperCase();
           secrets[`${dbName}_DB_USER`] = match[1];
           // URL-decode the password (it's URL-encoded in DATABASE_URL but Docker needs raw value)
           secrets[`${dbName}_DB_PASSWORD`] = decodeURIComponent(match[2]);
@@ -109,7 +116,10 @@ export function generateEnvFile(rootDir: string = findProjectRoot()): void {
     }
 
     // Escape special characters in values
-    const escapedValue = value.toString().replace(/\$/g, '\\$').replace(/"/g, '\\"');
+    const escapedValue = value
+      .toString()
+      .replace(/\$/g, '\\$')
+      .replace(/"/g, '\\"');
     envLines.push(`${key}=${escapedValue}`);
   }
 

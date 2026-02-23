@@ -1,11 +1,11 @@
 import { describe, it, expect, rs, beforeEach, afterEach } from '@rstest/core';
 import { generateEnvFile } from './generate-env-file';
-import * as loadLocalSecretsModule from './load-local-secrets';
+import * as loadLocalSecretsModule from './load-local-secrets-file';
 import * as fsModule from '../fs';
 import * as pathsModule from '../paths';
 
 // Mock dependencies
-rs.mock('./load-local-secrets', { mock: true });
+rs.mock('./load-local-secrets-file', { mock: true });
 rs.mock('../fs', { mock: true });
 rs.mock('../paths', { mock: true });
 rs.mock('../logger', () => ({

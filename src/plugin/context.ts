@@ -70,7 +70,7 @@ import { executeCommand } from '../utils/exec';
 
 // OpenAPI utilities
 import { parseOpenApiSecurity } from '../utils/openapi';
-import { extractUniquePaths } from '../utils/openapi/group-routes-by-security';
+import { extractUniquePaths } from '../utils/openapi/extract-unique-paths';
 
 // Kong utilities
 import {

@@ -12,6 +12,7 @@ rs.mock('../../config', { mock: true });
 rs.mock('../../logger', { mock: true });
 rs.mock('../../paths', { mock: true });
 rs.mock('../../fs', { mock: true });
+rs.mock('../../template', { mock: true });
 rs.mock('../resolve-template-versions', { mock: true });
 
 import { spawnSync } from 'child_process';
@@ -19,11 +20,12 @@ import * as fs from 'fs';
 import { saveFrameworkConfig } from '../../config';
 import { logger } from '../../logger';
 import { findProjectRoot } from '../../paths';
+import { readPackageJsonFrom, extractAuthor } from '../../fs';
 import {
-  readPackageJsonFrom,
-  extractAuthor,
-  deleteFolderRecursive,
-} from '../../fs';
+  cloneTemplateRepo,
+  replacePlaceholdersInFile,
+  removeTemplateMetadata,
+} from '../../template';
 import { NEXTJS_AUTH_TEMPLATE_REPO } from '../../../constants';
 import { resolveTemplateVersions } from '../resolve-template-versions';
 import { createMockFrameworkConfig } from '../../../test-fixtures/framework-config';
@@ -48,7 +50,7 @@ describe('nextjsAuthFlow', () => {
     // Directory does not exist by default
     rs.mocked(fs.existsSync).mockReturnValue(false);
 
-    // Git clone succeeds
+    // spawnSync for npm install + sync
     rs.mocked(spawnSync).mockReturnValue({
       status: 0,
       stdout: Buffer.from(''),
@@ -57,11 +59,6 @@ describe('nextjsAuthFlow', () => {
       output: [],
       signal: null,
     });
-
-    // fs.readFileSync for placeholder replacement
-    rs.mocked(fs.readFileSync).mockReturnValue(
-      '{{SERVICE_NAME}} by {{AUTHOR}}',
-    );
   });
 
   describe('directory existence check', () => {
@@ -77,84 +74,44 @@ describe('nextjsAuthFlow', () => {
   });
 
   describe('template cloning', () => {
-    it('should clone template with correct git arguments', async () => {
+    it('should call cloneTemplateRepo with correct arguments', async () => {
       const config = createMockFrameworkConfig();
 
       await nextjsAuthFlow(APP_NAME, PORT, config);
 
       const expectedAppPath = `${PROJECT_ROOT}/apps/${APP_NAME}`;
-      expect(spawnSync).toHaveBeenCalledWith(
-        'git',
-        ['clone', '--depth', '1', NEXTJS_AUTH_TEMPLATE_REPO, expectedAppPath],
-        {
-          cwd: PROJECT_ROOT,
-          stdio: 'pipe',
-        },
-      );
-    });
-
-    it('should throw when clone fails', async () => {
-      rs.mocked(spawnSync).mockReturnValue({
-        status: 1,
-        stdout: Buffer.from(''),
-        stderr: Buffer.from('fatal: repository not found'),
-        pid: 1234,
-        output: [],
-        signal: null,
-      });
-
-      const config = createMockFrameworkConfig();
-
-      await expect(nextjsAuthFlow(APP_NAME, PORT, config)).rejects.toThrow(
-        'Failed to clone template repository.',
+      expect(cloneTemplateRepo).toHaveBeenCalledWith(
+        NEXTJS_AUTH_TEMPLATE_REPO,
+        expectedAppPath,
       );
     });
   });
 
-  describe('.git directory removal', () => {
-    it('should remove .git directory after clone', async () => {
-      rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
-        const p = String(path);
-        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
-        if (p.endsWith('.git')) return true;
-        return false;
-      });
-
+  describe('template metadata removal', () => {
+    it('should call removeTemplateMetadata with the app path', async () => {
       const config = createMockFrameworkConfig();
 
       await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      expect(deleteFolderRecursive).toHaveBeenCalledWith(
-        `${PROJECT_ROOT}/apps/${APP_NAME}/.git`,
+      expect(removeTemplateMetadata).toHaveBeenCalledWith(
+        `${PROJECT_ROOT}/apps/${APP_NAME}`,
       );
     });
   });
 
   describe('placeholder replacement', () => {
-    it('should replace placeholders in package.json', async () => {
-      rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
-        const p = String(path);
-        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
-        if (p.includes('package.json') && p.includes(APP_NAME)) return true;
-        return false;
-      });
-
+    it('should call replacePlaceholdersInFile for package.json', async () => {
       const config = createMockFrameworkConfig();
 
       await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      // Verify readFileSync was called for package.json
-      expect(fs.readFileSync).toHaveBeenCalledWith(
+      expect(replacePlaceholdersInFile).toHaveBeenCalledWith(
         `${PROJECT_ROOT}/apps/${APP_NAME}/package.json`,
-        'utf-8',
+        {
+          '\\{\\{SERVICE_NAME\\}\\}': APP_NAME,
+          '\\{\\{AUTHOR\\}\\}': 'Test Author',
+        },
       );
-
-      // Verify writeFileSync was called with replaced content
-      const writeFileCalls = rs.mocked(fs.writeFileSync).mock.calls;
-      const placeholderWriteCall = writeFileCalls.find(
-        (call) => typeof call[1] === 'string' && call[1].includes(APP_NAME),
-      );
-      expect(placeholderWriteCall).toBeDefined();
     });
   });
 
@@ -221,7 +178,7 @@ describe('nextjsAuthFlow', () => {
     });
 
     it('should handle sync failure gracefully with a warning', async () => {
-      // spawnSync calls: git clone (1), npm install (2), sync (3)
+      // spawnSync calls: npm install (1), sync (2)
       rs.mocked(spawnSync)
         .mockReturnValueOnce({
           status: 0,
@@ -232,18 +189,10 @@ describe('nextjsAuthFlow', () => {
           signal: null,
         })
         .mockReturnValueOnce({
-          status: 0,
-          stdout: Buffer.from(''),
-          stderr: Buffer.from(''),
-          pid: 1235,
-          output: [],
-          signal: null,
-        })
-        .mockReturnValueOnce({
           status: 1,
           stdout: Buffer.from(''),
           stderr: Buffer.from('sync error'),
-          pid: 1236,
+          pid: 1235,
           output: [],
           signal: null,
         });
@@ -276,20 +225,15 @@ describe('nextjsAuthFlow', () => {
 
       const config = createMockFrameworkConfig();
 
-      rs.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
-        const p = String(path);
-        if (p === `${PROJECT_ROOT}/apps/${APP_NAME}`) return false;
-        if (p.includes('package.json') && p.includes(APP_NAME)) return true;
-        return false;
-      });
-
       await nextjsAuthFlow(APP_NAME, PORT, config);
 
-      const writeFileCalls = rs.mocked(fs.writeFileSync).mock.calls;
-      const placeholderWriteCall = writeFileCalls.find(
-        (call) => typeof call[1] === 'string' && call[1].includes('tsdevstack'),
+      // When author is 'unknown', the flow falls back to 'tsdevstack'
+      expect(replacePlaceholdersInFile).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          '\\{\\{AUTHOR\\}\\}': 'tsdevstack',
+        }),
       );
-      expect(placeholderWriteCall).toBeDefined();
     });
   });
 });

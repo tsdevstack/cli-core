@@ -12,12 +12,12 @@ import type { FrameworkConfig } from '../../config/types';
 import { saveFrameworkConfig } from '../../config';
 import { logger } from '../../logger';
 import { findProjectRoot } from '../../paths';
+import { readPackageJsonFrom, extractAuthor, writePackageJson } from '../../fs';
 import {
-  readPackageJsonFrom,
-  extractAuthor,
-  writePackageJson,
-  deleteFolderRecursive,
-} from '../../fs';
+  replacePlaceholdersInFile,
+  cloneTemplateRepo,
+  removeTemplateMetadata,
+} from '../../template';
 import { NEXTJS_AUTH_TEMPLATE_REPO } from '../../../constants';
 import { resolveTemplateVersions } from '../resolve-template-versions';
 
@@ -34,26 +34,6 @@ function getAuthor(): string {
   } catch {
     return 'tsdevstack';
   }
-}
-
-/**
- * Replace placeholders in a file
- */
-function replacePlaceholdersInFile(
-  filePath: string,
-  replacements: Record<string, string>,
-): void {
-  if (!fs.existsSync(filePath)) {
-    return;
-  }
-
-  let content = fs.readFileSync(filePath, 'utf-8');
-
-  for (const [placeholder, value] of Object.entries(replacements)) {
-    content = content.replace(new RegExp(placeholder, 'g'), value);
-  }
-
-  fs.writeFileSync(filePath, content, 'utf-8');
 }
 
 export async function nextjsAuthFlow(
@@ -73,31 +53,8 @@ export async function nextjsAuthFlow(
   logger.newline();
   logger.generating('Cloning Next.js auth template...');
 
-  // Step 1: Clone template repo
-  const cloneResult = spawnSync(
-    'git',
-    ['clone', '--depth', '1', NEXTJS_AUTH_TEMPLATE_REPO, appPath],
-    {
-      cwd: projectRoot,
-      stdio: 'pipe',
-    },
-  );
-
-  if (cloneResult.status !== 0) {
-    const errorOutput = cloneResult.stderr?.toString() || 'Unknown error';
-    throw new Error(
-      `Failed to clone template repository.\n${errorOutput}\nMake sure git is installed and you have internet access.`,
-    );
-  }
-
-  logger.success('Template cloned');
-
-  // Step 2: Remove .git directory
-  const gitDir = join(appPath, '.git');
-  if (fs.existsSync(gitDir)) {
-    deleteFolderRecursive(gitDir);
-    logger.info('Removed .git directory');
-  }
+  // Step 1: Clone template repo and remove .git
+  cloneTemplateRepo(NEXTJS_AUTH_TEMPLATE_REPO, appPath);
 
   // Step 3: Replace placeholders
   logger.generating('Replacing placeholders...');
@@ -108,20 +65,16 @@ export async function nextjsAuthFlow(
   replacePlaceholdersInFile(join(appPath, 'package.json'), replacements);
   logger.success('Placeholders replaced');
 
-  // Step 4: Remove template repository metadata from package.json
+  // Step 4: Remove template repository metadata
+  removeTemplateMetadata(appPath);
+
+  // Step 5: Resolve dependency versions against user's project
   try {
     const packageJson = readPackageJsonFrom(appPath);
-    delete (packageJson as Record<string, unknown>).repository;
-    delete (packageJson as Record<string, unknown>).homepage;
-    delete (packageJson as Record<string, unknown>).bugs;
-
-    // Step 5: Resolve dependency versions against user's project
     resolveTemplateVersions(packageJson, projectRoot);
-
     writePackageJson(appPath, packageJson);
-    logger.success('Package.json updated');
   } catch {
-    logger.warn('Could not update package.json metadata');
+    logger.warn('Could not resolve template dependency versions');
   }
 
   // ============================================================

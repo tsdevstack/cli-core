@@ -1,8 +1,11 @@
 import { describe, it, expect, rs, beforeEach } from '@rstest/core';
 
-const { mockComposeDown, mockComposeUp } = rs.hoisted(() => ({
+const { mockComposeDown, mockComposeUp, mockLogger } = rs.hoisted(() => ({
   mockComposeDown: rs.fn(),
   mockComposeUp: rs.fn(),
+  mockLogger: {
+    info: rs.fn(),
+  },
 }));
 
 rs.mock('./compose-down', () => ({
@@ -10,6 +13,9 @@ rs.mock('./compose-down', () => ({
 }));
 rs.mock('./compose-up', () => ({
   composeUp: mockComposeUp,
+}));
+rs.mock('../../logger', () => ({
+  logger: mockLogger,
 }));
 
 import { recreateAllContainers } from './recreate-all-containers';
