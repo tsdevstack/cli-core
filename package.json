@@ -1,6 +1,6 @@
 {
   "name": "@tsdevstack/cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
   "license": "MIT",
