@@ -23,6 +23,7 @@ import {
   buildConfig,
   replaceMonorepoPlaceholders,
   scaffoldAuthService,
+  scaffoldAuthServiceClient,
   scaffoldFrontend,
   printNextSteps,
 } from '../utils/init';
@@ -87,6 +88,7 @@ export async function init(args: InitCliArgs): Promise<void> {
   }
 
   if (options.template === 'fullstack-auth' && options.frontendName) {
+    scaffoldAuthServiceClient(projectDir);
     scaffoldFrontend(projectDir, options.frontendName, config);
   }
 

@@ -15,6 +15,7 @@ import { join } from 'path';
 import { CliError } from '../errors';
 import { deleteFolderRecursive } from '../fs';
 import { logger } from '../logger';
+import { removeGitkeepFiles } from './remove-gitkeep-files';
 
 export function cloneTemplateRepo(repoUrl: string, targetPath: string): void {
   const cloneResult = spawnSync(
@@ -39,4 +40,7 @@ export function cloneTemplateRepo(repoUrl: string, targetPath: string): void {
   if (fs.existsSync(gitDir)) {
     deleteFolderRecursive(gitDir);
   }
+
+  // Remove .gitkeep files (only needed to preserve empty dirs in git)
+  removeGitkeepFiles(targetPath);
 }

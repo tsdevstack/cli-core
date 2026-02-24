@@ -9,6 +9,7 @@ const {
   mockBuildConfig,
   mockReplaceMonorepoPlaceholders,
   mockScaffoldAuthService,
+  mockScaffoldAuthServiceClient,
   mockScaffoldFrontend,
   mockPrintNextSteps,
   mockCloneTemplateRepo,
@@ -24,6 +25,7 @@ const {
   mockBuildConfig: rs.fn(),
   mockReplaceMonorepoPlaceholders: rs.fn(),
   mockScaffoldAuthService: rs.fn(),
+  mockScaffoldAuthServiceClient: rs.fn(),
   mockScaffoldFrontend: rs.fn(),
   mockPrintNextSteps: rs.fn(),
   mockCloneTemplateRepo: rs.fn(),
@@ -52,6 +54,7 @@ rs.mock('../utils/init', () => ({
   buildConfig: mockBuildConfig,
   replaceMonorepoPlaceholders: mockReplaceMonorepoPlaceholders,
   scaffoldAuthService: mockScaffoldAuthService,
+  scaffoldAuthServiceClient: mockScaffoldAuthServiceClient,
   scaffoldFrontend: mockScaffoldFrontend,
   printNextSteps: mockPrintNextSteps,
 }));

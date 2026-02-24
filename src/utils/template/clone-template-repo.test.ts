@@ -1,14 +1,20 @@
 import { describe, it, expect, rs, beforeEach } from '@rstest/core';
 
-const { mockSpawnSync, mockExistsSync, mockDeleteFolderRecursive, mockLogger } =
-  rs.hoisted(() => ({
-    mockSpawnSync: rs.fn(),
-    mockExistsSync: rs.fn(),
-    mockDeleteFolderRecursive: rs.fn(),
-    mockLogger: {
-      success: rs.fn(),
-    },
-  }));
+const {
+  mockSpawnSync,
+  mockExistsSync,
+  mockDeleteFolderRecursive,
+  mockRemoveGitkeepFiles,
+  mockLogger,
+} = rs.hoisted(() => ({
+  mockSpawnSync: rs.fn(),
+  mockExistsSync: rs.fn(),
+  mockDeleteFolderRecursive: rs.fn(),
+  mockRemoveGitkeepFiles: rs.fn(),
+  mockLogger: {
+    success: rs.fn(),
+  },
+}));
 
 rs.mock('child_process', () => ({
   spawnSync: mockSpawnSync,
@@ -21,6 +27,9 @@ rs.mock('../fs', () => ({
 }));
 rs.mock('../logger', () => ({
   logger: mockLogger,
+}));
+rs.mock('./remove-gitkeep-files', () => ({
+  removeGitkeepFiles: mockRemoveGitkeepFiles,
 }));
 
 import { cloneTemplateRepo } from './clone-template-repo';
