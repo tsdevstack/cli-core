@@ -114,7 +114,59 @@ export async function init(args: InitCliArgs): Promise<void> {
     logger.success('Dependencies installed');
   }
 
-  // Step 12: Run sync (only if services exist and Docker is running)
+  // Step 12: Build libs and generate OpenAPI docs (needed for Kong config)
+  const nestServices = config.services.filter(
+    (s: { type: string }) => s.type === 'nestjs',
+  );
+
+  if (nestServices.length > 0) {
+    logger.newline();
+    logger.generating('Building shared packages...');
+    const buildLibsResult = spawnSync('npm', ['run', 'build:libs'], {
+      cwd: projectDir,
+      stdio: 'inherit',
+    });
+
+    if (buildLibsResult.status === 0) {
+      logger.success('Shared packages built');
+    } else {
+      logger.warn(
+        'Could not build shared packages. Run "npm run build:libs" manually.',
+      );
+    }
+
+    for (const service of nestServices) {
+      logger.generating(`Building ${service.name}...`);
+      const buildResult = spawnSync(
+        'npm',
+        ['run', 'build', '-w', service.name],
+        { cwd: projectDir, stdio: 'inherit' },
+      );
+      if (buildResult.status === 0) {
+        logger.success(`${service.name} built`);
+      } else {
+        logger.warn(`Could not build ${service.name}.`);
+      }
+    }
+
+    logger.generating('Generating OpenAPI docs...');
+    for (const service of nestServices) {
+      const docsResult = spawnSync(
+        'npm',
+        ['run', 'docs:generate', '-w', service.name],
+        { cwd: projectDir, stdio: 'inherit' },
+      );
+      if (docsResult.status === 0) {
+        logger.success(`${service.name} OpenAPI docs generated`);
+      } else {
+        logger.warn(
+          `Could not generate OpenAPI docs for ${service.name}. Run "npm run docs:generate -w ${service.name}" manually.`,
+        );
+      }
+    }
+  }
+
+  // Step 13: Run sync (only if services exist and Docker is running)
   if (config.services.length > 0) {
     const dockerCheck = spawnSync('docker', ['info'], { stdio: 'pipe' });
 
@@ -142,6 +194,6 @@ export async function init(args: InitCliArgs): Promise<void> {
     }
   }
 
-  // Step 13: Print next steps
+  // Step 14: Print next steps
   printNextSteps(options);
 }

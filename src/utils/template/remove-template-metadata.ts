@@ -17,7 +17,6 @@ export function removeTemplateMetadata(appPath: string): void {
     delete (packageJson as Record<string, unknown>).homepage;
     delete (packageJson as Record<string, unknown>).bugs;
     writePackageJson(appPath, packageJson);
-    logger.success('Template metadata removed from package.json');
   } catch {
     logger.warn('Could not remove template metadata from package.json');
   }

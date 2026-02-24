@@ -5,7 +5,6 @@ const { mockReadPackageJsonFrom, mockWritePackageJson, mockLogger } =
     mockReadPackageJsonFrom: rs.fn(),
     mockWritePackageJson: rs.fn(),
     mockLogger: {
-      success: rs.fn(),
       warn: rs.fn(),
     },
   }));
@@ -44,19 +43,6 @@ describe('removeTemplateMetadata', () => {
         name: 'my-service',
         version: '1.0.0',
       });
-    });
-
-    it('should log success after removing metadata', () => {
-      mockReadPackageJsonFrom.mockReturnValue({
-        name: 'my-service',
-        repository: 'some-url',
-      });
-
-      removeTemplateMetadata(APP_PATH);
-
-      expect(mockLogger.success).toHaveBeenCalledWith(
-        'Template metadata removed from package.json',
-      );
     });
 
     it('should handle package.json without metadata fields', () => {
