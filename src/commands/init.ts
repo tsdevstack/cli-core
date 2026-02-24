@@ -112,22 +112,31 @@ export async function init(args: InitCliArgs): Promise<void> {
     logger.success('Dependencies installed');
   }
 
-  // Step 12: Run sync (only if services exist)
+  // Step 12: Run sync (only if services exist and Docker is running)
   if (config.services.length > 0) {
-    logger.newline();
-    logger.generating('Running sync to generate infrastructure files...');
+    const dockerCheck = spawnSync('docker', ['info'], { stdio: 'pipe' });
 
-    const syncResult = spawnSync('npx', ['tsdevstack', 'sync'], {
-      cwd: projectDir,
-      stdio: 'inherit',
-    });
-
-    if (syncResult.status !== 0) {
+    if (dockerCheck.status !== 0) {
+      logger.newline();
       logger.warn(
-        'Sync had issues. You may need to run "npx tsdevstack sync" manually from the project root.',
+        'Docker is not running — skipping sync. Start Docker and run "npx tsdevstack sync" from the project root.',
       );
     } else {
-      logger.success('Sync completed');
+      logger.newline();
+      logger.generating('Running sync to generate infrastructure files...');
+
+      const syncResult = spawnSync('npx', ['tsdevstack', 'sync'], {
+        cwd: projectDir,
+        stdio: 'inherit',
+      });
+
+      if (syncResult.status !== 0) {
+        logger.warn(
+          'Sync had issues. You may need to run "npx tsdevstack sync" manually from the project root.',
+        );
+      } else {
+        logger.success('Sync completed');
+      }
     }
   }
 

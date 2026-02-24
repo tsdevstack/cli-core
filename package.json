@@ -1,5 +1,5 @@
 {
-  "name": "tsdevstack",
+  "name": "@tsdevstack/cli",
   "version": "0.1.4",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
@@ -28,7 +28,8 @@
   },
   "type": "module",
   "bin": {
-    "tsdevstack": "./dist/cli.js"
+    "tsdevstack": "./dist/cli.js",
+    "tsds": "./dist/cli.js"
   },
   "exports": {
     "./plugin": {

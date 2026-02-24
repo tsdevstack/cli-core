@@ -261,6 +261,49 @@ describe('init', () => {
       );
       expect(syncCalls).toHaveLength(0);
     });
+
+    it('should skip sync when Docker is not running', async () => {
+      const config = {
+        ...defaultConfig,
+        services: [{ name: 'auth-service', type: 'nestjs', port: 3001 }],
+      };
+      mockBuildConfig.mockReturnValue(config);
+      mockPromptInitOptions.mockResolvedValue({
+        ...defaultOptions,
+        template: 'auth',
+      });
+      mockSpawnSync.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === 'docker' && args[0] === 'info') {
+          return {
+            status: 1,
+            stdout: Buffer.from(''),
+            stderr: Buffer.from(''),
+            pid: 1234,
+            output: [],
+            signal: null,
+          };
+        }
+        return {
+          status: 0,
+          stdout: Buffer.from(''),
+          stderr: Buffer.from(''),
+          pid: 1234,
+          output: [],
+          signal: null,
+        };
+      });
+
+      await init({});
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Docker is not running'),
+      );
+      const syncCalls = mockSpawnSync.mock.calls.filter(
+        (call: unknown[]) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes('sync'),
+      );
+      expect(syncCalls).toHaveLength(0);
+    });
   });
 
   describe('Error cases', () => {

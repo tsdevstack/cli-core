@@ -15,7 +15,7 @@ export default defineConfig({
       },
       output: {
         minify: true,
-        externals: ['tsdevstack', 'tsdevstack/plugin'],
+        externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
         copy: [
           { from: './src/templates', to: './templates' },
           { from: './src/swagger-ts-templates', to: './swagger-ts-templates' },
@@ -34,7 +34,7 @@ export default defineConfig({
         },
       },
       output: {
-        externals: ['tsdevstack', 'tsdevstack/plugin'],
+        externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
       },
     },
   ],
