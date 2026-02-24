@@ -209,6 +209,45 @@ export async function init(args: InitCliArgs): Promise<void> {
         );
       } else {
         logger.success('Sync completed');
+
+        // Step 13b: Create initial Prisma migrations for services with databases
+        const dbServices = config.services.filter(
+          (s: { type: string; hasDatabase?: boolean }) => s.hasDatabase,
+        );
+
+        for (const service of dbServices) {
+          const migrationsDir = join(
+            projectDir,
+            'apps',
+            service.name,
+            'prisma',
+            'migrations',
+          );
+          const hasMigrations =
+            fs.existsSync(migrationsDir) &&
+            fs.readdirSync(migrationsDir).length > 0;
+
+          if (!hasMigrations) {
+            logger.generating(
+              `Creating initial database migration for ${service.name}...`,
+            );
+            const migrateResult = spawnSync(
+              'npx',
+              ['prisma', 'migrate', 'dev', '--name', 'init'],
+              {
+                cwd: join(projectDir, 'apps', service.name),
+                stdio: 'inherit',
+              },
+            );
+            if (migrateResult.status === 0) {
+              logger.success(`${service.name} initial migration created`);
+            } else {
+              logger.warn(
+                `Could not create migration for ${service.name}. Run "cd apps/${service.name} && npx prisma migrate dev --name init" manually.`,
+              );
+            }
+          }
+        }
       }
     }
   }
