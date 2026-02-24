@@ -29,7 +29,7 @@ describe('replaceMonorepoPlaceholders', () => {
         mockReplacePlaceholdersInFile.mock.calls[0][1];
       expect(firstCallReplacements).toEqual({
         '\\{\\{PROJECT_NAME\\}\\}': 'my-app',
-        '\\{\\{CLI_VERSION\\}\\}': '1.0.0',
+        '\\{\\{CLI_VERSION\\}\\}': '^1.0.0',
       });
     });
 

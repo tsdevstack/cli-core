@@ -24,12 +24,15 @@ export function generateUserSecretsFile(config: FrameworkConfig): SecretsFile {
   // Framework-generated secrets (JWT keys, service API keys, service URLs) are in framework file
   const secrets: Record<string, string> = {
     DOMAIN: '', // Set for cloud deployment (e.g., example.com). API will be api.{DOMAIN}
-    APP_URL: '', // Frontend URL for email links (e.g., http://localhost:3000 or https://app.example.com)
+    APP_URL: 'http://localhost:3000', // Frontend URL for email links (e.g., https://app.example.com)
     KONG_SERVICE_HOST,
     API_URL: KONG_GATEWAY_URL,
     ACCESS_TOKEN_TTL: '900', // 15 minutes
     REFRESH_TOKEN_TTL: '604800', // 7 days
     CONFIRMATION_TOKEN_TTL: '86400', // 24 hours (in seconds)
+    RESEND_API_KEY: '', // Set your Resend API key for email delivery
+    EMAIL_FROM: 'noreply@example.com', // Sender address for transactional emails
+    EMAIL_PROVIDER: 'console', // 'console' for local dev (logs emails), 'resend' for production
   };
 
   // Only add KONG_CORS_ORIGINS if there are frontend services
@@ -47,7 +50,8 @@ export function generateUserSecretsFile(config: FrameworkConfig): SecretsFile {
       '4': 'Restart your services to pick up changes',
     },
     $important: {
-      safe_to_edit: 'This file (.secrets.user.json) is SAFE to edit - your changes will be preserved',
+      safe_to_edit:
+        'This file (.secrets.user.json) is SAFE to edit - your changes will be preserved',
       local_only:
         'ALLOWED_ORIGINS here are for LOCAL development (http://localhost:*)',
       framework_secrets:

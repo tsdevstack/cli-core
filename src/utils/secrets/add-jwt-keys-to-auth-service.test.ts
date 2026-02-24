@@ -3,11 +3,12 @@ import { addJwtKeysToAuthService } from './add-jwt-keys-to-auth-service';
 import type { SecretsFile, ServiceSecrets } from './types';
 
 describe('addJwtKeysToAuthService', () => {
-  // Phase 8: Function now adds TTL values to user file (JWT keys moved to framework file)
-  const AUTH_TTL_SECRETS = [
+  // User secrets that auth-service needs (TTLs + APP_URL for email links)
+  const AUTH_USER_SECRETS = [
     'ACCESS_TOKEN_TTL',
     'REFRESH_TOKEN_TTL',
     'CONFIRMATION_TOKEN_TTL',
+    'APP_URL',
   ];
 
   describe('When auth template is enabled', () => {
@@ -28,10 +29,11 @@ describe('addJwtKeysToAuthService', () => {
         'ACCESS_TOKEN_TTL',
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
+        'APP_URL',
       ]);
     });
 
-    it('should not add TTL values if already present', () => {
+    it('should not add secrets if already present', () => {
       const file: SecretsFile = {
         secrets: {},
         'auth-service': {
@@ -40,6 +42,7 @@ describe('addJwtKeysToAuthService', () => {
             'ACCESS_TOKEN_TTL',
             'REFRESH_TOKEN_TTL',
             'CONFIRMATION_TOKEN_TTL',
+            'APP_URL',
           ],
         },
       };
@@ -52,10 +55,11 @@ describe('addJwtKeysToAuthService', () => {
         'ACCESS_TOKEN_TTL',
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
+        'APP_URL',
       ]);
     });
 
-    it('should add only missing TTL values', () => {
+    it('should add only missing secrets', () => {
       const file: SecretsFile = {
         secrets: {},
         'auth-service': {
@@ -71,10 +75,11 @@ describe('addJwtKeysToAuthService', () => {
         'ACCESS_TOKEN_TTL',
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
+        'APP_URL',
       ]);
     });
 
-    it('should preserve existing secrets order and add TTL values at the end', () => {
+    it('should preserve existing secrets order and add at the end', () => {
       const file: SecretsFile = {
         secrets: {},
         'auth-service': {
@@ -92,6 +97,7 @@ describe('addJwtKeysToAuthService', () => {
         'ACCESS_TOKEN_TTL',
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
+        'APP_URL',
       ]);
     });
 
@@ -121,7 +127,7 @@ describe('addJwtKeysToAuthService', () => {
 
       expect(result).toBe(true);
       expect((file['auth-service'] as ServiceSecrets).secrets).toEqual(
-        AUTH_TTL_SECRETS,
+        AUTH_USER_SECRETS,
       );
     });
   });

@@ -14,7 +14,7 @@ export function replaceMonorepoPlaceholders(
 ): void {
   const replacements: Record<string, string> = {
     '\\{\\{PROJECT_NAME\\}\\}': projectName,
-    '\\{\\{CLI_VERSION\\}\\}': cliVersion,
+    '\\{\\{CLI_VERSION\\}\\}': `^${cliVersion}`,
   };
 
   const filesToProcess = [

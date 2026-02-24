@@ -59,12 +59,13 @@ describe('generateUserSecretsFile', () => {
       expect(result.secrets).toBeDefined();
     });
 
-    it('should include base secrets', () => {
+    it('should include all base secrets with correct defaults', () => {
       const config = createMockFrameworkConfig();
 
       const result = generateUserSecretsFile(config);
 
-      // User file now only contains config values (not framework secrets like KONG_TRUST_TOKEN)
+      expect(result.secrets.DOMAIN).toBe('');
+      expect(result.secrets.APP_URL).toBe('http://localhost:3000');
       expect(result.secrets.KONG_SERVICE_HOST).toBe(
         'http://host.docker.internal',
       );
@@ -72,6 +73,9 @@ describe('generateUserSecretsFile', () => {
       expect(result.secrets.ACCESS_TOKEN_TTL).toBe('900');
       expect(result.secrets.REFRESH_TOKEN_TTL).toBe('604800');
       expect(result.secrets.CONFIRMATION_TOKEN_TTL).toBe('86400');
+      expect(result.secrets.RESEND_API_KEY).toBe('');
+      expect(result.secrets.EMAIL_FROM).toBe('noreply@example.com');
+      expect(result.secrets.EMAIL_PROVIDER).toBe('console');
       // KONG_TRUST_TOKEN moved to framework file
       expect(result.secrets.KONG_TRUST_TOKEN).toBeUndefined();
     });

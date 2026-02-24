@@ -37,10 +37,11 @@ export const NEXTJS_SECRETS = [
 ] as const;
 
 /**
- * TTL values that auth-service needs from user file
+ * User secrets that auth-service needs (TTLs + APP_URL for email links)
  */
-export const AUTH_TTL_SECRETS = [
+export const AUTH_USER_SECRETS = [
   'ACCESS_TOKEN_TTL',
   'REFRESH_TOKEN_TTL',
   'CONFIRMATION_TOKEN_TTL',
+  'APP_URL',
 ] as const;

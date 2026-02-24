@@ -150,6 +150,7 @@ export async function init(args: InitCliArgs): Promise<void> {
     }
 
     logger.generating('Generating OpenAPI docs...');
+    const docsGenerated: string[] = [];
     for (const service of nestServices) {
       const docsResult = spawnSync(
         'npm',
@@ -158,9 +159,27 @@ export async function init(args: InitCliArgs): Promise<void> {
       );
       if (docsResult.status === 0) {
         logger.success(`${service.name} OpenAPI docs generated`);
+        docsGenerated.push(service.name);
       } else {
         logger.warn(
           `Could not generate OpenAPI docs for ${service.name}. Run "npm run docs:generate -w ${service.name}" manually.`,
+        );
+      }
+    }
+
+    // Step 12b: Generate HTTP clients from OpenAPI specs
+    for (const serviceName of docsGenerated) {
+      logger.generating(`Generating HTTP client for ${serviceName}...`);
+      const clientResult = spawnSync(
+        'npx',
+        ['tsdevstack', 'generate-client', serviceName],
+        { cwd: projectDir, stdio: 'inherit' },
+      );
+      if (clientResult.status === 0) {
+        logger.success(`${serviceName} HTTP client generated`);
+      } else {
+        logger.warn(
+          `Could not generate HTTP client for ${serviceName}. Run "npx tsdevstack generate-client ${serviceName}" manually.`,
         );
       }
     }
