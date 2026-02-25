@@ -7,8 +7,7 @@ NestJS backends, Next.js frontends, Kong gateway, PostgreSQL, Redis — with aut
 ## Quick start
 
 ```bash
-npm install @tsdevstack/cli
-npx tsdevstack init
+npx @tsdevstack/cli init
 ```
 
 This scaffolds a new project with services, gateway, database, and local dev environment ready to run.
