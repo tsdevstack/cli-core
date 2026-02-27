@@ -26,7 +26,6 @@ describe('printNextSteps', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);
@@ -41,7 +40,6 @@ describe('printNextSteps', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);
@@ -54,7 +52,6 @@ describe('printNextSteps', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);
@@ -72,7 +69,6 @@ describe('printNextSteps', () => {
         projectName: 'my-app',
         template: 'auth',
         frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);
@@ -85,28 +81,11 @@ describe('printNextSteps', () => {
       );
     });
 
-    it('should include specific cloud:init step when provider is chosen', () => {
+    it('should include generic cloud:init step', () => {
       const options: InitOptions = {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: 'aws',
-      };
-
-      printNextSteps(options);
-
-      const calls = mockLogger.info.mock.calls.map(
-        (call: unknown[]) => call[0],
-      );
-      expect(calls).toContainEqual(expect.stringContaining('cloud:init --aws'));
-    });
-
-    it('should include generic cloud:init step when no provider is chosen', () => {
-      const options: InitOptions = {
-        projectName: 'my-app',
-        template: 'empty',
-        frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);
@@ -124,7 +103,6 @@ describe('printNextSteps', () => {
         projectName: 'my-app',
         template: 'auth',
         frontendName: null,
-        cloudProvider: null,
       };
 
       printNextSteps(options);

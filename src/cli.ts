@@ -142,7 +142,6 @@ program
     '-f, --frontend-name <name>',
     'Frontend app name (for fullstack-auth)',
   )
-  .option('-c, --cloud <provider>', 'Cloud provider (gcp, aws, azure)')
   .action(
     wrapCommand(async (options: InitCliArgs) => {
       await init(options);

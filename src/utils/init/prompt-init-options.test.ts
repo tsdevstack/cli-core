@@ -18,7 +18,6 @@ describe('promptInitOptions', () => {
       const args: InitCliArgs = {
         name: 'my-app',
         template: 'empty',
-        cloud: 'gcp',
       };
 
       const result = await promptInitOptions(args);
@@ -28,7 +27,6 @@ describe('promptInitOptions', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: 'gcp',
       });
     });
 
@@ -36,7 +34,6 @@ describe('promptInitOptions', () => {
       await promptInitOptions({
         name: 'my-app',
         template: 'empty',
-        cloud: 'aws',
       });
 
       expect(validateServiceName).toHaveBeenCalledWith('my-app');
@@ -50,7 +47,6 @@ describe('promptInitOptions', () => {
       const result = await promptInitOptions({
         name: 'my-project',
         template: 'fullstack-auth',
-        cloud: 'gcp',
       });
 
       expect(result.frontendName).toBe('web-app');
@@ -61,7 +57,6 @@ describe('promptInitOptions', () => {
         name: 'my-project',
         template: 'fullstack-auth',
         frontendName: 'dashboard',
-        cloud: 'gcp',
       });
 
       expect(inquirer.prompt).not.toHaveBeenCalled();
@@ -78,7 +73,6 @@ describe('promptInitOptions', () => {
 
       const result = await promptInitOptions({
         template: 'empty',
-        cloud: 'aws',
       });
 
       expect(result.projectName).toBe('prompted-app');
@@ -97,7 +91,6 @@ describe('promptInitOptions', () => {
 
       const result = await promptInitOptions({
         name: 'my-app',
-        cloud: 'gcp',
       });
 
       expect(result.template).toBe('auth');
@@ -111,45 +104,10 @@ describe('promptInitOptions', () => {
       const result = await promptInitOptions({
         name: 'my-app',
         template: 'invalid-template',
-        cloud: 'gcp',
       });
 
       expect(result.template).toBe('empty');
       expect(inquirer.prompt).toHaveBeenCalledOnce();
-    });
-  });
-
-  describe('Cloud provider prompting', () => {
-    it('should prompt for cloud when not provided', async () => {
-      rs.mocked(inquirer.prompt).mockResolvedValueOnce({ cloud: 'azure' });
-
-      const result = await promptInitOptions({
-        name: 'my-app',
-        template: 'empty',
-      });
-
-      expect(result.cloudProvider).toBe('azure');
-    });
-
-    it('should set cloudProvider to null when user selects none', async () => {
-      rs.mocked(inquirer.prompt).mockResolvedValueOnce({ cloud: 'none' });
-
-      const result = await promptInitOptions({
-        name: 'my-app',
-        template: 'empty',
-      });
-
-      expect(result.cloudProvider).toBeNull();
-    });
-
-    it('should set cloudProvider to null when invalid cloud arg provided', async () => {
-      const result = await promptInitOptions({
-        name: 'my-app',
-        template: 'empty',
-        cloud: 'invalid-provider',
-      });
-
-      expect(result.cloudProvider).toBeNull();
     });
   });
 
@@ -158,7 +116,6 @@ describe('promptInitOptions', () => {
       const result = await promptInitOptions({
         name: 'my-app',
         template: 'empty',
-        cloud: 'gcp',
       });
 
       expect(result.frontendName).toBeNull();
@@ -168,7 +125,6 @@ describe('promptInitOptions', () => {
       const result = await promptInitOptions({
         name: 'my-app',
         template: 'auth',
-        cloud: 'gcp',
       });
 
       expect(result.frontendName).toBeNull();

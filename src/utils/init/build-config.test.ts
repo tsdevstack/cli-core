@@ -9,7 +9,6 @@ describe('buildConfig', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);
@@ -23,7 +22,6 @@ describe('buildConfig', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);
@@ -36,7 +34,6 @@ describe('buildConfig', () => {
         projectName: 'my-app',
         template: 'auth',
         frontendName: null,
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);
@@ -49,7 +46,6 @@ describe('buildConfig', () => {
         projectName: 'my-app',
         template: 'fullstack-auth',
         frontendName: 'frontend',
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);
@@ -57,25 +53,11 @@ describe('buildConfig', () => {
       expect(config.framework?.template).toBe('fullstack-auth');
     });
 
-    it('should set cloud provider', () => {
+    it('should always set cloud provider to null', () => {
       const options: InitOptions = {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: 'gcp',
-      };
-
-      const config = buildConfig(options);
-
-      expect(config.cloud.provider).toBe('gcp');
-    });
-
-    it('should set cloud provider to null when not specified', () => {
-      const options: InitOptions = {
-        projectName: 'my-app',
-        template: 'empty',
-        frontendName: null,
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);
@@ -88,7 +70,6 @@ describe('buildConfig', () => {
         projectName: 'my-app',
         template: 'empty',
         frontendName: null,
-        cloudProvider: null,
       };
 
       const config = buildConfig(options);

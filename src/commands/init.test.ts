@@ -88,7 +88,6 @@ describe('init', () => {
     projectName: 'my-app',
     template: 'empty' as const,
     frontendName: null,
-    cloudProvider: null,
   };
 
   const defaultConfig = {
@@ -127,7 +126,6 @@ describe('init', () => {
       const args = {
         name: 'my-app',
         template: 'auth',
-        cloud: 'gcp',
       };
 
       await init(args);

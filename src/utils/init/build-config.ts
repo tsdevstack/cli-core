@@ -1,7 +1,7 @@
 /**
  * Build FrameworkConfig from init options
  *
- * Creates the initial config.json structure based on user's template and cloud choices.
+ * Creates the initial config.json structure based on user's template choice.
  */
 
 import type { FrameworkConfig } from '../config/types';
@@ -19,7 +19,7 @@ export function buildConfig(options: InitOptions): FrameworkConfig {
       template,
     },
     cloud: {
-      provider: options.cloudProvider,
+      provider: null,
     },
     services: [],
   };

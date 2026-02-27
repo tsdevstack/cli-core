@@ -21,17 +21,10 @@ export function printNextSteps(options: InitOptions): void {
     step++;
   }
 
-  if (options.cloudProvider) {
-    logger.info(
-      `  ${step}. npx tsdevstack cloud:init --${options.cloudProvider}`,
-    );
-    step++;
-  } else {
-    logger.info(
-      `  ${step}. npx tsdevstack cloud:init --gcp|--aws|--azure  (when ready)`,
-    );
-    step++;
-  }
+  logger.info(
+    `  ${step}. npx tsdevstack cloud:init --gcp|--aws|--azure  (when ready)`,
+  );
+  step++;
 
   logger.info(`  ${step}. docker compose up -d`);
   step++;
