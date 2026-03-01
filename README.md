@@ -6,7 +6,7 @@ From zero to production in an hour, not months.
 
 You don't write Terraform. You don't configure gateways. You don't set up CI/CD. The framework generates, manages, and deploys all of it — across GCP, AWS, and Azure. You write application code, tsdevstack handles everything else.
 
-NestJS backends, Next.js frontends, Kong gateway, PostgreSQL, Redis, Prometheus, Grafana, Jaeger — with auto-generated infrastructure, secrets, and pipelines.
+NestJS backends, Next.js frontends, Rsbuild SPAs, Kong gateway, PostgreSQL, Redis, Prometheus, Grafana, Jaeger — with auto-generated infrastructure, secrets, and pipelines.
 
 ## Quick start
 
@@ -24,7 +24,7 @@ This scaffolds a new project with services, gateway, database, and local dev env
 - **Multi-cloud deployment** — one command deploys to GCP, AWS, or Azure. Same framework, same patterns.
 - **AI-native** — built-in MCP server for Claude Code, Cursor, and VS Code Copilot. 31 tools for deploying, querying, and debugging your stack.
 - **Config generation** — docker-compose, Kong gateway, secrets, and Dockerfiles from a single `sync` command
-- **OpenAPI client generation** — type-safe HTTP clients from service specs
+- **OpenAPI client generation** — type-safe HTTP clients and DTOs from service specs
 - **Secret management** — local generation and cloud secret sync with environment isolation
 - **Observability** — Prometheus metrics, Grafana dashboards, distributed tracing with Jaeger
 - **Authentication** — JWT token management, protected routes, session handling out of the box
