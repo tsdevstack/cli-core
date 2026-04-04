@@ -22,7 +22,7 @@ This scaffolds a new project with services, gateway, database, and local dev env
 - **Infrastructure as Framework** — generated Terraform, Docker, gateway routes, and CI/CD from your service definitions. No YAML to maintain, no drift to debug.
 - **Service scaffolding** — add NestJS backends, Next.js frontends, or Rsbuild SPAs with a single command
 - **Multi-cloud deployment** — one command deploys to GCP, AWS, or Azure. Same framework, same patterns.
-- **AI-native** — built-in MCP server for Claude Code, Cursor, and VS Code Copilot. 31 tools for deploying, querying, and debugging your stack.
+- **AI-native** — built-in MCP server for Claude Code, Cursor, and VS Code Copilot. 54 tools for deploying, querying, and debugging your stack.
 - **Object storage** — add buckets with a command; MinIO locally, cloud-native (S3, GCS, Azure Blob) in production
 - **Config generation** — docker-compose, Kong gateway, secrets, and Dockerfiles from a single `sync` command
 - **OpenAPI client generation** — type-safe HTTP clients and DTOs from service specs
@@ -72,24 +72,28 @@ This scaffolds a new project with services, gateway, database, and local dev env
 
 ### Infrastructure
 
-| Command                 | Description                                              |
-| ----------------------- | -------------------------------------------------------- |
-| `infra:bootstrap`       | Bootstrap cloud project (enable APIs, add roles)         |
-| `infra:init`            | Initialize infrastructure (Terraform state bucket)       |
-| `infra:generate`        | Generate Terraform files from config                     |
-| `infra:plan`            | Preview infrastructure changes                           |
-| `infra:deploy`          | Full deploy: Terraform + services + Kong + load balancer |
-| `infra:destroy`         | Destroy all infrastructure for an environment            |
-| `infra:deploy-service`  | Build, push, and deploy a single service                 |
-| `infra:deploy-services` | Build, push, and deploy all services                     |
-| `infra:remove-service`  | Remove a service from cloud                              |
-| `infra:deploy-kong`     | Deploy Kong gateway                                      |
-| `infra:deploy-lb`       | Deploy load balancer                                     |
-| `infra:deploy-env-auth` | Deploy environment access control                        |
-| `infra:remove-env-auth` | Remove environment access control                        |
-| `infra:status`          | Check infrastructure status                              |
-| `infra:list-deployed`   | List all deployed services                               |
-| `infra:service-status`  | Check status of a specific service                       |
+| Command                    | Description                                              |
+| -------------------------- | -------------------------------------------------------- |
+| `infra:bootstrap`          | Bootstrap cloud project (enable APIs, add roles)         |
+| `infra:init`               | Initialize infrastructure (Terraform state bucket)       |
+| `infra:generate`           | Generate Terraform files from config                     |
+| `infra:plan`               | Preview infrastructure changes                           |
+| `infra:deploy`             | Full deploy: Terraform + services + Kong + load balancer |
+| `infra:destroy`            | Destroy all infrastructure for an environment            |
+| `infra:deploy-service`     | Build, push, and deploy a single service                 |
+| `infra:deploy-services`    | Build, push, and deploy all services                     |
+| `infra:remove-service`     | Remove a service from cloud                              |
+| `infra:remove-detached-worker` | Remove a detached worker from cloud                  |
+| `infra:generate-docker`    | Generate Dockerfiles                                     |
+| `infra:build-docker`       | Build Docker images                                      |
+| `infra:push-docker`        | Push Docker images to registry                           |
+| `infra:generate-kong`      | Generate Kong gateway config                             |
+| `infra:build-kong`         | Build Kong Docker image                                  |
+| `infra:deploy-kong`        | Deploy Kong gateway                                      |
+| `infra:deploy-lb`          | Deploy load balancer                                     |
+| `infra:status`             | Check infrastructure status                              |
+| `infra:list-deployed`      | List all deployed services                               |
+| `infra:service-status`     | Check status of a specific service                       |
 
 ### Database Migrations
 
