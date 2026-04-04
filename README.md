@@ -23,6 +23,7 @@ This scaffolds a new project with services, gateway, database, and local dev env
 - **Service scaffolding** — add NestJS backends, Next.js frontends, or Rsbuild SPAs with a single command
 - **Multi-cloud deployment** — one command deploys to GCP, AWS, or Azure. Same framework, same patterns.
 - **AI-native** — built-in MCP server for Claude Code, Cursor, and VS Code Copilot. 31 tools for deploying, querying, and debugging your stack.
+- **Object storage** — add buckets with a command; MinIO locally, cloud-native (S3, GCS, Azure Blob) in production
 - **Config generation** — docker-compose, Kong gateway, secrets, and Dockerfiles from a single `sync` command
 - **OpenAPI client generation** — type-safe HTTP clients and DTOs from service specs
 - **Secret management** — local generation and cloud secret sync with environment isolation
@@ -43,6 +44,11 @@ This scaffolds a new project with services, gateway, database, and local dev env
 | `generate-secrets`        | Regenerate local secrets                              |
 | `generate-docker-compose` | Regenerate docker-compose.yml                         |
 | `generate-client`         | Generate TypeScript API client from OpenAPI spec      |
+| `add-bucket-storage`      | Add an object storage bucket                          |
+| `remove-bucket-storage`   | Remove an object storage bucket                       |
+| `add-messaging-topic`     | Add an async messaging topic                          |
+| `remove-messaging-topic`  | Remove a messaging topic                              |
+| `update-messaging-topic`  | Update publishers/subscribers for a topic             |
 | `validate-service`        | Validate service naming and structure                 |
 
 ### Workers

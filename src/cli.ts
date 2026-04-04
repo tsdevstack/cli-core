@@ -38,6 +38,11 @@ import type { InitCliArgs } from './commands/init';
 import { removeService } from './commands/remove-service';
 import { registerDetachedWorker } from './commands/register-detached-worker';
 import { unregisterDetachedWorker } from './commands/unregister-detached-worker';
+import { addBucketStorage } from './commands/add-bucket-storage';
+import { removeBucketStorage } from './commands/remove-bucket-storage';
+import { addMessagingTopic } from './commands/add-messaging-topic';
+import { removeMessagingTopic } from './commands/remove-messaging-topic';
+import { updateMessagingTopic } from './commands/update-messaging-topic';
 // Utilities
 import { logger } from './utils/logger';
 import { wrapCommand } from './utils/errors';
@@ -200,6 +205,85 @@ program
     wrapCommand(async (options: { worker?: string }) => {
       await unregisterDetachedWorker(options);
     }),
+  );
+
+program
+  .command('add-bucket-storage')
+  .description('Add an object storage bucket to the project')
+  .option('--name <name>', 'Bucket logical name (kebab-case)')
+  .action(
+    wrapCommand(async (options: { name?: string }) => {
+      await addBucketStorage(options);
+    }),
+  );
+
+program
+  .command('remove-bucket-storage')
+  .description('Remove an object storage bucket from the project')
+  .option('--name <name>', 'Bucket name to remove')
+  .option('--force', 'Skip confirmation prompt')
+  .action(
+    wrapCommand(async (options: { name?: string; force?: boolean }) => {
+      await removeBucketStorage(options);
+    }),
+  );
+
+program
+  .command('add-messaging-topic')
+  .description('Add a messaging topic for inter-service async communication')
+  .option('--name <name>', 'Topic name (kebab-case)')
+  .option(
+    '--publishers <services>',
+    'Comma-separated list of publishing services',
+  )
+  .option(
+    '--subscribers <services>',
+    'Comma-separated list of subscribing services',
+  )
+  .action(
+    wrapCommand(
+      async (options: {
+        name?: string;
+        publishers?: string;
+        subscribers?: string;
+      }) => {
+        await addMessagingTopic(options);
+      },
+    ),
+  );
+
+program
+  .command('remove-messaging-topic')
+  .description('Remove a messaging topic from the project')
+  .option('--name <name>', 'Topic name to remove')
+  .action(
+    wrapCommand(async (options: { name?: string }) => {
+      await removeMessagingTopic(options);
+    }),
+  );
+
+program
+  .command('update-messaging-topic')
+  .description('Update publishers and subscribers for a messaging topic')
+  .option('--name <name>', 'Topic name to update')
+  .option(
+    '--publishers <services>',
+    'Comma-separated list of publishing services (replaces current)',
+  )
+  .option(
+    '--subscribers <services>',
+    'Comma-separated list of subscribing services (replaces current)',
+  )
+  .action(
+    wrapCommand(
+      async (options: {
+        name?: string;
+        publishers?: string;
+        subscribers?: string;
+      }) => {
+        await updateMessagingTopic(options);
+      },
+    ),
   );
 
 // Initialize and register plugins

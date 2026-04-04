@@ -14,11 +14,12 @@ import {
   generatePrometheusService,
   generateGrafanaService,
   generateJaegerService,
+  generateMinioService,
 } from '../generators';
 
 export function generateFrameworkServices(
   config: FrameworkConfig,
-  secrets: Record<string, string>
+  secrets: Record<string, string>,
 ): DockerComposeServices {
   const services: DockerComposeServices = {};
 
@@ -51,21 +52,26 @@ export function generateFrameworkServices(
       const password = secrets[`${prefix}_DB_PASSWORD`];
       if (!password) {
         throw new Error(
-          `Database password not found for ${service.name}. Run: npx tsdevstack generate-secrets`
+          `Database password not found for ${service.name}. Run: npx tsdevstack generate-secrets`,
         );
       }
 
       logger.info(`   ✓ ${dbName}-db (PostgreSQL on port ${dbPort})`);
       Object.assign(
         services,
-        generateDatabaseService(service.name, dbPort, networkName)
+        generateDatabaseService(service.name, dbPort, networkName),
       );
     }
   }
 
   // 4. pgAdmin (with all databases pre-configured)
-  logger.info('   ✓ pgAdmin (http://localhost:5050, admin@localhost.com/admin)');
-  Object.assign(services, generatePgAdminService(config.services, secrets, networkName));
+  logger.info(
+    '   ✓ pgAdmin (http://localhost:5050, admin@localhost.com/admin)',
+  );
+  Object.assign(
+    services,
+    generatePgAdminService(config.services, secrets, networkName),
+  );
 
   // 5. Prometheus + Grafana + Jaeger (monitoring & tracing)
   logger.info('   ✓ Prometheus (http://localhost:9090)');
@@ -76,6 +82,12 @@ export function generateFrameworkServices(
 
   logger.info('   ✓ Jaeger (http://localhost:16686)');
   Object.assign(services, generateJaegerService(networkName));
+
+  // 6. MinIO (S3-compatible storage) — only when buckets configured
+  if (config.storage?.buckets && config.storage.buckets.length > 0) {
+    logger.info('   ✓ MinIO (S3-compatible storage)');
+    Object.assign(services, generateMinioService(config, networkName));
+  }
 
   return services;
 }

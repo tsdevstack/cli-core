@@ -10,3 +10,4 @@ export { generatePgAdminService } from './pgadmin-service';
 export { generatePrometheusService } from './prometheus-service';
 export { generateGrafanaService } from './grafana-service';
 export { generateJaegerService } from './jaeger-service';
+export { generateMinioService } from './minio-service';

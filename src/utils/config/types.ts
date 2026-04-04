@@ -35,6 +35,18 @@ export interface FrameworkConfig {
   cloud: CloudConfig;
   services: FrameworkService[];
   environments?: Environments;
+  storage?: {
+    buckets: string[];
+  };
+  messaging?: {
+    topics: MessagingTopic[];
+  };
+}
+
+export interface MessagingTopic {
+  name: string;
+  publishers: string[];
+  subscribers: string[];
 }
 
 export interface FrameworkService {

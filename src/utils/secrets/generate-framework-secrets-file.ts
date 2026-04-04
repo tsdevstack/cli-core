@@ -18,6 +18,10 @@ import {
   BACKEND_DEFAULT_SECRETS,
   KONG_SSL_VERIFY,
   KONG_GATEWAY_URL,
+  LOCAL_STORAGE_ENDPOINT,
+  LOCAL_STORAGE_ACCESS_KEY,
+  LOCAL_STORAGE_SECRET_KEY,
+  LOCAL_STORAGE_FORCE_PATH_STYLE,
 } from '../../constants';
 
 /**
@@ -223,6 +227,35 @@ export function generateFrameworkSecretsFile(
     ...dbCredentials,
   };
 
+  // Step 7: Add storage secrets when buckets are configured
+  const hasBuckets =
+    config.storage?.buckets && config.storage.buckets.length > 0;
+  const storageBucketKeys: string[] = [];
+
+  if (hasBuckets) {
+    // MinIO connection secrets (local-dev only — NOT added to service secrets arrays)
+    file.secrets = {
+      ...file.secrets,
+      STORAGE_ENDPOINT: LOCAL_STORAGE_ENDPOINT,
+      STORAGE_ACCESS_KEY: LOCAL_STORAGE_ACCESS_KEY,
+      STORAGE_SECRET_KEY: LOCAL_STORAGE_SECRET_KEY,
+      STORAGE_FORCE_PATH_STYLE: LOCAL_STORAGE_FORCE_PATH_STYLE,
+    };
+
+    // Dynamic bucket name secrets (needed locally AND in production)
+    const bucketSecrets: Record<string, string> = {};
+    for (const bucket of config.storage!.buckets) {
+      const key = `STORAGE_BUCKET_${bucket.replace(/-/g, '_').toUpperCase()}`;
+      bucketSecrets[key] = `${config.project.name}-${bucket}-dev`;
+      storageBucketKeys.push(key);
+    }
+
+    file.secrets = {
+      ...file.secrets,
+      ...bucketSecrets,
+    };
+  }
+
   // Generate service-specific secrets (skip workers - they share secrets with base service)
   for (const service of config.services) {
     // Workers don't have ports and share secrets with their base service
@@ -271,6 +304,11 @@ export function generateFrameworkSecretsFile(
           `DB_${prefix.toUpperCase()}_USERNAME`,
           `DB_${prefix.toUpperCase()}_PASSWORD`,
         );
+      }
+
+      // Add storage bucket name secrets (only STORAGE_BUCKET_* — connection secrets are local-only)
+      if (hasBuckets) {
+        serviceSecretsArray.push(...storageBucketKeys);
       }
     }
 

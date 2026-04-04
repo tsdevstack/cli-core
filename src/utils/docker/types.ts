@@ -23,6 +23,13 @@ export interface DockerComposeBuild {
   args?: Record<string, string>;
 }
 
+export interface DockerComposeDependsOnCondition {
+  condition:
+    | 'service_started'
+    | 'service_healthy'
+    | 'service_completed_successfully';
+}
+
 export interface DockerComposeService {
   image?: string;
   build?: DockerComposeBuild;
@@ -33,8 +40,9 @@ export interface DockerComposeService {
   volumes?: (string | DockerComposeVolume)[];
   ports?: string[];
   networks?: string[];
-  depends_on?: string[];
+  depends_on?: string[] | Record<string, DockerComposeDependsOnCondition>;
   command?: string | string[];
+  entrypoint?: string | string[];
   healthcheck?: DockerComposeHealthCheck;
 }
 
@@ -69,4 +77,7 @@ export interface Infrastructure {
 /**
  * Environment configuration
  */
-export type Environments = Record<string, Record<string, string | number | boolean>>;
+export type Environments = Record<
+  string,
+  Record<string, string | number | boolean>
+>;
