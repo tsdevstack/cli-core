@@ -126,6 +126,11 @@ export async function init(args: InitCliArgs): Promise<void> {
     );
   } else {
     logger.success('Dependencies installed');
+
+    // Reconcile lockfile (workaround for npm bug: npm/cli#8726)
+    logger.generating('Reconciling lockfile...');
+    spawnSync('npm', ['install'], { cwd: projectDir, stdio: 'inherit' });
+    logger.success('Lockfile reconciled');
   }
 
   // Step 12: Build libs and generate OpenAPI docs (needed for Kong config)
