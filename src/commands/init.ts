@@ -76,6 +76,20 @@ export async function init(args: InitCliArgs): Promise<void> {
   replaceMonorepoPlaceholders(projectDir, options.projectName, cliVersion);
   logger.success('Project scaffolded');
 
+  // Step 6b: Initialize git repo (needed before npm install so husky can install hooks)
+  const gitInitResult = spawnSync('git', ['init'], {
+    cwd: projectDir,
+    stdio: 'pipe',
+  });
+
+  if (gitInitResult.status === 0) {
+    logger.success('Git repository initialized');
+  } else {
+    logger.warn(
+      'Could not initialize git repository. Run "git init" manually.',
+    );
+  }
+
   // Step 7: Remove template metadata from monorepo package.json
   removeTemplateMetadata(projectDir);
 
