@@ -174,6 +174,10 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 
 Guides, architecture, and API reference at **[tsdevstack.dev](https://tsdevstack.dev)**
 
+## Community
+
+Join the Discord: [discord.gg/2EMFkqc8QR](https://discord.gg/2EMFkqc8QR)
+
 ## License
 
 MIT
