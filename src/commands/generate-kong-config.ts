@@ -403,7 +403,7 @@ export function generateKongConfig(_context?: OperationContext): void {
   logger.info(
     '   2. Add partner consumers to kong.user.yml (if using @PartnerApi)',
   );
-  logger.info('   3. Run: docker-compose up kong');
+  logger.info('   3. Run: npx tsdevstack sync');
   logger.newline();
 
   logger.info(

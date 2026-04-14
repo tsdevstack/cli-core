@@ -22,7 +22,7 @@ tsdevstack scaffolds a full-stack TypeScript monorepo and generates all the infr
 
 **Async messaging** — Inter-service pub/sub via Redis Streams. Consumer groups, dead letter queues, retry logic. No new infrastructure — runs on the same Redis instance as caching and BullMQ.
 
-**Authentication** — JWT token management, protected routes, session handling, email confirmation. Bring your own OIDC or use the built-in auth service.
+**Authentication** — OWASP-aligned JWT token management, protected routes, session handling, email confirmation. Bring your own OIDC or use the built-in auth service template.
 
 **Secrets** — Generated locally, synced to cloud. Environment isolation, scoped per service, rotated on deploy. Secret Manager on all three providers.
 
@@ -32,7 +32,7 @@ tsdevstack scaffolds a full-stack TypeScript monorepo and generates all the infr
 
 **CI/CD** — Generated GitHub Actions workflows. OIDC authentication, per-service deploys, environment selection. No secrets in your repo.
 
-**Compliance** — SOC 2, ISO 27001, GDPR technical controls built into the generated infrastructure. Encryption at rest and in transit, network isolation, zero-credential runtimes.
+**Compliance** — SOC 2, ISO 27001, GDPR technical controls built into the generated infrastructure. OWASP Top 10 coverage. Encryption at rest and in transit, network isolation, zero-credential runtimes.
 
 ## Quick start
 

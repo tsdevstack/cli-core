@@ -98,7 +98,7 @@ describe('printNextSteps', () => {
       );
     });
 
-    it('should include docker compose and npm run dev steps', () => {
+    it('should include sync and npm run dev steps', () => {
       const options: InitOptions = {
         projectName: 'my-app',
         template: 'auth',
@@ -111,9 +111,30 @@ describe('printNextSteps', () => {
         (call: unknown[]) => call[0],
       );
       expect(calls).toContainEqual(
-        expect.stringContaining('docker compose up -d'),
+        expect.stringContaining('npx tsdevstack sync'),
       );
       expect(calls).toContainEqual(expect.stringContaining('npm run dev'));
+    });
+
+    it('should show cloud:init as the last step', () => {
+      const options: InitOptions = {
+        projectName: 'my-app',
+        template: 'auth',
+        frontendName: null,
+      };
+
+      printNextSteps(options);
+
+      const calls = mockLogger.info.mock.calls.map(
+        (call: unknown[]) => call[0],
+      );
+      const cloudInitIndex = calls.findIndex((c: unknown) =>
+        String(c).includes('cloud:init'),
+      );
+      const devIndex = calls.findIndex((c: unknown) =>
+        String(c).includes('npm run dev'),
+      );
+      expect(cloudInitIndex).toBeGreaterThan(devIndex);
     });
   });
 });

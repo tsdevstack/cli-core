@@ -127,9 +127,8 @@ export function generateDockerCompose(context?: OperationContext): void {
   logger.newline();
 
   logger.summary('Next steps:');
-  logger.info('   1. Run: docker compose up -d');
-  logger.info('   2. Check services: docker compose ps');
-  logger.info('   3. Access Grafana: http://localhost:4001');
+  logger.info('   1. Run: npx tsdevstack sync');
+  logger.info('   2. Access Grafana: http://localhost:4001');
   logger.newline();
 
   logger.warn('Remember:');

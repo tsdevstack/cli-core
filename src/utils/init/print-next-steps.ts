@@ -21,13 +21,12 @@ export function printNextSteps(options: InitOptions): void {
     step++;
   }
 
+  logger.info(`  ${step}. npx tsdevstack sync`);
+  step++;
+  logger.info(`  ${step}. npm run dev`);
+  step++;
   logger.info(
     `  ${step}. npx tsdevstack cloud:init --gcp|--aws|--azure  (when ready)`,
   );
-  step++;
-
-  logger.info(`  ${step}. docker compose up -d`);
-  step++;
-  logger.info(`  ${step}. npm run dev`);
   logger.newline();
 }
