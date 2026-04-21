@@ -72,6 +72,27 @@ describe('spaFlow', () => {
       );
     });
 
+    it('should remove package-lock.json left behind by create-rsbuild', async () => {
+      rs.mocked(fsModule.existsSync).mockImplementation((p) =>
+        (p as string).endsWith('package-lock.json'),
+      );
+
+      await spaFlow('my-spa', 3100, { ...mockConfig, services: [] });
+
+      expect(fsModule.rmSync).toHaveBeenCalledWith(
+        '/mock/project/apps/my-spa/package-lock.json',
+        { force: true },
+      );
+    });
+
+    it('should skip lockfile cleanup when none exists', async () => {
+      rs.mocked(fsModule.existsSync).mockReturnValue(false);
+
+      await spaFlow('my-spa', 3100, { ...mockConfig, services: [] });
+
+      expect(fsModule.rmSync).not.toHaveBeenCalled();
+    });
+
     it('should throw when create-rsbuild fails', async () => {
       rs.mocked(childProcessModule.spawnSync).mockReturnValue({
         status: 1,

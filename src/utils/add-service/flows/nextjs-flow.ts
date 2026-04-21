@@ -6,7 +6,7 @@
 
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import type { FrameworkConfig } from '../../config/types';
 import { saveFrameworkConfig } from '../../config';
 import { logger } from '../../logger';
@@ -15,7 +15,7 @@ import { findProjectRoot } from '../../paths';
 export async function nextjsFlow(
   serviceName: string,
   port: number,
-  config: FrameworkConfig
+  config: FrameworkConfig,
 ): Promise<void> {
   const projectRoot = findProjectRoot();
   const appPath = join(projectRoot, 'apps', serviceName);
@@ -32,8 +32,16 @@ export async function nextjsFlow(
 
   if (result.status !== 0) {
     throw new Error(
-      'Failed to create Next.js app. Make sure npm is available and you have internet access.'
+      'Failed to create Next.js app. Make sure npm is available and you have internet access.',
     );
+  }
+
+  // create-next-app writes its own package-lock.json in the app dir, but this
+  // repo uses npm workspaces — the root lockfile is the only one that matters.
+  // A frozen per-app lockfile becomes stale and shows up in Dependabot scans.
+  const scaffoldedLockfile = join(appPath, 'package-lock.json');
+  if (existsSync(scaffoldedLockfile)) {
+    rmSync(scaffoldedLockfile, { force: true });
   }
 
   // Add output: "standalone" to next.config for Docker deployment
@@ -58,17 +66,17 @@ export async function nextjsFlow(
         if (configContent.includes('const nextConfig = {')) {
           configContent = configContent.replace(
             'const nextConfig = {',
-            'const nextConfig = {\n  output: "standalone",'
+            'const nextConfig = {\n  output: "standalone",',
           );
         } else if (configContent.includes('const nextConfig: NextConfig = {')) {
           configContent = configContent.replace(
             'const nextConfig: NextConfig = {',
-            'const nextConfig: NextConfig = {\n  output: "standalone",'
+            'const nextConfig: NextConfig = {\n  output: "standalone",',
           );
         } else if (configContent.includes('export default {')) {
           configContent = configContent.replace(
             'export default {',
-            'export default {\n  output: "standalone",'
+            'export default {\n  output: "standalone",',
           );
         }
 
@@ -76,10 +84,14 @@ export async function nextjsFlow(
         logger.success('Added output: "standalone" to next.config');
       }
     } catch {
-      logger.warn('Could not update next.config. You may need to add output: "standalone" manually.');
+      logger.warn(
+        'Could not update next.config. You may need to add output: "standalone" manually.',
+      );
     }
   } else {
-    logger.warn('Could not find next.config file. You may need to add output: "standalone" manually.');
+    logger.warn(
+      'Could not find next.config file. You may need to add output: "standalone" manually.',
+    );
   }
 
   // Register in config.json
@@ -101,5 +113,7 @@ export async function nextjsFlow(
   logger.info('  2. npm install');
   logger.info('  3. npm run dev');
   logger.newline();
-  logger.info('Run "npx tsdevstack sync" to update docker-compose and Kong configuration.');
+  logger.info(
+    'Run "npx tsdevstack sync" to update docker-compose and Kong configuration.',
+  );
 }

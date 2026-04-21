@@ -77,6 +77,29 @@ describe('nextjsFlow', () => {
     });
   });
 
+  describe('Post-scaffold lockfile cleanup', () => {
+    it('should remove package-lock.json left behind by create-next-app', async () => {
+      rs.mocked(fsModule.existsSync).mockImplementation((p) =>
+        (p as string).endsWith('package-lock.json'),
+      );
+
+      await nextjsFlow('my-frontend', 3000, { ...mockConfig, services: [] });
+
+      expect(fsModule.rmSync).toHaveBeenCalledWith(
+        '/mock/project/apps/my-frontend/package-lock.json',
+        { force: true },
+      );
+    });
+
+    it('should skip cleanup when no package-lock.json exists', async () => {
+      rs.mocked(fsModule.existsSync).mockReturnValue(false);
+
+      await nextjsFlow('my-frontend', 3000, { ...mockConfig, services: [] });
+
+      expect(fsModule.rmSync).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Config file update', () => {
     it('should find next.config.ts first', async () => {
       rs.mocked(fsModule.existsSync).mockImplementation((p) =>

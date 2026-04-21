@@ -6,7 +6,7 @@
 
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import type { FrameworkConfig } from '../../config/types';
 import { saveFrameworkConfig } from '../../config';
 import { logger } from '../../logger';
@@ -39,6 +39,14 @@ export async function spaFlow(
     throw new Error(
       'Failed to create SPA. Make sure npm is available and you have internet access.',
     );
+  }
+
+  // create-rsbuild writes its own package-lock.json in the app dir, but this
+  // repo uses npm workspaces — the root lockfile is the only one that matters.
+  // A frozen per-app lockfile becomes stale and shows up in Dependabot scans.
+  const scaffoldedLockfile = join(appPath, 'package-lock.json');
+  if (existsSync(scaffoldedLockfile)) {
+    rmSync(scaffoldedLockfile, { force: true });
   }
 
   // Update package.json name to match service name
