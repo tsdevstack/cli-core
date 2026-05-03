@@ -29,6 +29,18 @@ export function generateDatabaseService(
       volumes: [`./data/${containerName}:/var/lib/postgresql/data`],
       ports: [`${port}:5432`],
       networks: [networkName],
+      // `$$` is the compose escape — compose renders it as `$`, the in-container
+      // shell expands `$POSTGRES_USER`/`$POSTGRES_DB` from the container's env.
+      // Without this healthcheck, `docker compose up --wait` returns as soon as
+      // the container process exists, before initdb finishes — which lets prisma
+      // migrate fire against a not-yet-ready DB on first run.
+      healthcheck: {
+        test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB'],
+        interval: '5s',
+        timeout: '3s',
+        retries: 10,
+        start_period: '15s',
+      },
     },
   };
 }

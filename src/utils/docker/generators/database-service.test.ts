@@ -61,4 +61,36 @@ describe('generateDatabaseService', () => {
       expect(result['auth-db'].ports).toEqual(['5433:5432']);
     });
   });
+
+  describe('Healthcheck', () => {
+    it('should declare a pg_isready healthcheck', () => {
+      const result = generateDatabaseService('auth-service', 5432, 'net');
+
+      const healthcheck = result['auth-db'].healthcheck;
+      expect(healthcheck).toBeDefined();
+      expect(healthcheck!.test).toEqual([
+        'CMD-SHELL',
+        'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB',
+      ]);
+    });
+
+    it('should use compose-escaped $$ env vars to keep credentials out of the rendered compose', () => {
+      const result = generateDatabaseService('auth-service', 5432, 'net');
+
+      const test = result['auth-db'].healthcheck!.test as string[];
+      const cmd = test[1];
+      expect(cmd).toContain('$$POSTGRES_USER');
+      expect(cmd).toContain('$$POSTGRES_DB');
+    });
+
+    it('should set retry/timeout knobs that tolerate cold-start initdb', () => {
+      const result = generateDatabaseService('auth-service', 5432, 'net');
+
+      const hc = result['auth-db'].healthcheck!;
+      expect(hc.interval).toBe('5s');
+      expect(hc.timeout).toBe('3s');
+      expect(hc.retries).toBe(10);
+      expect(hc.start_period).toBe('15s');
+    });
+  });
 });

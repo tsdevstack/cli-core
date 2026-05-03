@@ -38,4 +38,36 @@ describe('generateRedisService', () => {
 
     expect(result.redis.volumes).toEqual(['./data/redis:/data']);
   });
+
+  describe('Healthcheck', () => {
+    it('should declare a redis-cli ping healthcheck', () => {
+      const result = generateRedisService('net');
+
+      const healthcheck = result.redis.healthcheck;
+      expect(healthcheck).toBeDefined();
+      expect(healthcheck!.test).toEqual([
+        'CMD-SHELL',
+        'redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG',
+      ]);
+    });
+
+    it('should use compose-escaped $$REDIS_PASSWORD so the secret stays out of the rendered compose', () => {
+      const result = generateRedisService('net');
+
+      const test = result.redis.healthcheck!.test as string[];
+      const cmd = test[1];
+      expect(cmd).toContain('$$REDIS_PASSWORD');
+      expect(cmd).not.toContain('${REDIS_PASSWORD}');
+    });
+
+    it('should set retry/timeout knobs that tolerate cold start', () => {
+      const result = generateRedisService('net');
+
+      const hc = result.redis.healthcheck!;
+      expect(hc.interval).toBe('5s');
+      expect(hc.timeout).toBe('3s');
+      expect(hc.retries).toBe(10);
+      expect(hc.start_period).toBe('5s');
+    });
+  });
 });

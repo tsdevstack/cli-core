@@ -356,7 +356,7 @@ describe('init', () => {
     it('should print next steps', async () => {
       await init({});
 
-      expect(mockPrintNextSteps).toHaveBeenCalledWith(defaultOptions);
+      expect(mockPrintNextSteps).toHaveBeenCalledWith(defaultOptions, []);
     });
   });
 });

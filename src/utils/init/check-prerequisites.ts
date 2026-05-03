@@ -26,10 +26,10 @@ export function checkPrerequisites(): PrerequisiteResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Node >= 20 (error)
+  // Node >= 22 (error)
   const nodeMajor = parseInt(process.version.slice(1), 10);
-  if (nodeMajor < 20) {
-    errors.push(`Node.js >= 20 is required (found ${process.version})`);
+  if (nodeMajor < 22) {
+    errors.push(`Node.js >= 22 is required (found ${process.version})`);
   }
 
   // git installed (error)

@@ -5,6 +5,7 @@ const { mockLogger } = rs.hoisted(() => ({
     newline: rs.fn(),
     complete: rs.fn(),
     info: rs.fn(),
+    warn: rs.fn(),
   },
 }));
 
@@ -135,6 +136,83 @@ describe('printNextSteps', () => {
         String(c).includes('npm run dev'),
       );
       expect(cloudInitIndex).toBeGreaterThan(devIndex);
+    });
+  });
+
+  describe('Failure summary', () => {
+    const baseOptions: InitOptions = {
+      projectName: 'my-app',
+      template: 'auth',
+      frontendName: null,
+    };
+
+    it('should not print success when failures are present', () => {
+      printNextSteps(baseOptions, [{ name: 'npm install failed' }]);
+
+      expect(mockLogger.complete).not.toHaveBeenCalled();
+    });
+
+    it('should print "created with issues" header when failures are present', () => {
+      printNextSteps(baseOptions, [{ name: 'npm install failed' }]);
+
+      const warnCalls = mockLogger.warn.mock.calls.map(
+        (call: unknown[]) => call[0],
+      );
+      expect(warnCalls).toContainEqual(
+        expect.stringContaining('created with issues'),
+      );
+    });
+
+    it('should list each failure name', () => {
+      printNextSteps(baseOptions, [
+        { name: 'npm install failed' },
+        { name: 'Sync failed' },
+      ]);
+
+      const warnCalls = mockLogger.warn.mock.calls.map(
+        (call: unknown[]) => call[0],
+      );
+      expect(warnCalls).toContainEqual(
+        expect.stringContaining('npm install failed'),
+      );
+      expect(warnCalls).toContainEqual(expect.stringContaining('Sync failed'));
+    });
+
+    it('should print the hint when provided', () => {
+      printNextSteps(baseOptions, [
+        { name: 'Sync failed', hint: 'cd my-app && npx tsdevstack sync' },
+      ]);
+
+      const infoCalls = mockLogger.info.mock.calls.map(
+        (call: unknown[]) => call[0],
+      );
+      expect(infoCalls).toContainEqual(
+        expect.stringContaining('cd my-app && npx tsdevstack sync'),
+      );
+    });
+
+    it('should print recovery instructions instead of next-steps list', () => {
+      printNextSteps(baseOptions, [{ name: 'npm install failed' }]);
+
+      const infoCalls = mockLogger.info.mock.calls.map(
+        (call: unknown[]) => call[0],
+      );
+      expect(infoCalls).toContainEqual(expect.stringContaining('To recover'));
+      expect(infoCalls).toContainEqual(
+        expect.stringContaining('Resolve the issues above'),
+      );
+      expect(infoCalls).not.toContainEqual(
+        expect.stringContaining('--gcp|--aws|--azure'),
+      );
+    });
+
+    it('should fall back to success path when failures array is empty', () => {
+      printNextSteps(baseOptions, []);
+
+      expect(mockLogger.complete).toHaveBeenCalledWith(
+        'Project "my-app" created successfully!',
+      );
+      expect(mockLogger.warn).not.toHaveBeenCalled();
     });
   });
 });

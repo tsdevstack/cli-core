@@ -1,4 +1,4 @@
-import { describe, it, expect, rs, beforeEach } from '@rstest/core';
+import { describe, it, expect, rs, beforeEach, afterEach } from '@rstest/core';
 
 const { mockSpawnSync } = rs.hoisted(() => ({
   mockSpawnSync: rs.fn(),
@@ -127,6 +127,58 @@ describe('checkPrerequisites', () => {
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toContain('git');
       expect(result.warnings).toHaveLength(2);
+    });
+  });
+
+  describe('Node version', () => {
+    const originalVersion = process.version;
+
+    function setNodeVersion(version: string): void {
+      Object.defineProperty(process, 'version', {
+        value: version,
+        configurable: true,
+        writable: true,
+      });
+    }
+
+    beforeEach(() => {
+      mockWhichResults({ git: true, docker: true, terraform: true });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process, 'version', {
+        value: originalVersion,
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    it('should pass on Node 22', () => {
+      setNodeVersion('v22.0.0');
+      const result = checkPrerequisites();
+      expect(result.errors.some((e) => e.includes('Node.js'))).toBe(false);
+    });
+
+    it('should pass on Node 24', () => {
+      setNodeVersion('v24.0.0');
+      const result = checkPrerequisites();
+      expect(result.errors.some((e) => e.includes('Node.js'))).toBe(false);
+    });
+
+    it('should error on Node 20', () => {
+      setNodeVersion('v20.10.0');
+      const result = checkPrerequisites();
+      expect(
+        result.errors.some((e) => e.includes('Node.js') && e.includes('22')),
+      ).toBe(true);
+    });
+
+    it('should error on Node 18', () => {
+      setNodeVersion('v18.19.0');
+      const result = checkPrerequisites();
+      expect(
+        result.errors.some((e) => e.includes('Node.js') && e.includes('22')),
+      ).toBe(true);
     });
   });
 });

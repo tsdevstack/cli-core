@@ -27,7 +27,7 @@ import {
   scaffoldFrontend,
   printNextSteps,
 } from '../utils/init';
-import type { InitCliArgs } from '../utils/init';
+import type { InitCliArgs, StepFailure } from '../utils/init';
 
 export type { InitCliArgs };
 
@@ -111,6 +111,10 @@ export async function init(args: InitCliArgs): Promise<void> {
   writeJsonFile(configPath, config);
   logger.success('Configuration written');
 
+  // Track non-fatal failures from post-scaffold steps so the final summary
+  // can show what went wrong instead of silently claiming success.
+  const failures: StepFailure[] = [];
+
   // Step 11: npm install
   logger.newline();
   logger.generating('Installing dependencies...');
@@ -124,6 +128,10 @@ export async function init(args: InitCliArgs): Promise<void> {
     logger.warn(
       'npm install had issues. You may need to run "npm install" manually from the project root.',
     );
+    failures.push({
+      name: 'npm install failed',
+      hint: `cd ${options.projectName} && npm install`,
+    });
   } else {
     logger.success('Dependencies installed');
 
@@ -152,6 +160,10 @@ export async function init(args: InitCliArgs): Promise<void> {
       logger.warn(
         'Could not build shared packages. Run "npm run build:libs" manually.',
       );
+      failures.push({
+        name: 'Shared packages build failed',
+        hint: `cd ${options.projectName} && npm run build:libs`,
+      });
     }
 
     for (const service of nestServices) {
@@ -165,6 +177,10 @@ export async function init(args: InitCliArgs): Promise<void> {
         logger.success(`${service.name} built`);
       } else {
         logger.warn(`Could not build ${service.name}.`);
+        failures.push({
+          name: `${service.name} build failed`,
+          hint: `cd ${options.projectName} && npm run build -w ${service.name}`,
+        });
       }
     }
 
@@ -183,6 +199,10 @@ export async function init(args: InitCliArgs): Promise<void> {
         logger.warn(
           `Could not generate OpenAPI docs for ${service.name}. Run "npm run docs:generate -w ${service.name}" manually.`,
         );
+        failures.push({
+          name: `${service.name} OpenAPI docs generation failed`,
+          hint: `cd ${options.projectName} && npm run docs:generate -w ${service.name}`,
+        });
       }
     }
 
@@ -200,6 +220,10 @@ export async function init(args: InitCliArgs): Promise<void> {
         logger.warn(
           `Could not generate HTTP client for ${serviceName}. Run "npx tsdevstack generate-client ${serviceName}" manually.`,
         );
+        failures.push({
+          name: `${serviceName} HTTP client generation failed`,
+          hint: `cd ${options.projectName} && npx tsdevstack generate-client ${serviceName}`,
+        });
       }
     }
   }
@@ -213,6 +237,10 @@ export async function init(args: InitCliArgs): Promise<void> {
       logger.warn(
         'Docker is not running — skipping sync. Start Docker and run "npx tsdevstack sync" from the project root.',
       );
+      failures.push({
+        name: 'Sync skipped — Docker is not running',
+        hint: `Start Docker, then: cd ${options.projectName} && npx tsdevstack sync`,
+      });
     } else {
       logger.newline();
       logger.generating('Running sync to generate infrastructure files...');
@@ -226,6 +254,10 @@ export async function init(args: InitCliArgs): Promise<void> {
         logger.warn(
           'Sync had issues. You may need to run "npx tsdevstack sync" manually from the project root.',
         );
+        failures.push({
+          name: 'Sync failed',
+          hint: `cd ${options.projectName} && npx tsdevstack sync`,
+        });
       } else {
         logger.success('Sync completed');
 
@@ -264,6 +296,10 @@ export async function init(args: InitCliArgs): Promise<void> {
               logger.warn(
                 `Could not create migration for ${service.name}. Run "cd apps/${service.name} && npx prisma migrate dev --name init" manually.`,
               );
+              failures.push({
+                name: `${service.name} initial migration failed`,
+                hint: `cd ${options.projectName}/apps/${service.name} && npx prisma migrate dev --name init`,
+              });
             }
           }
         }
@@ -271,6 +307,6 @@ export async function init(args: InitCliArgs): Promise<void> {
     }
   }
 
-  // Step 14: Print next steps
-  printNextSteps(options);
+  // Step 14: Print next steps (or issues summary if any post-scaffold step failed)
+  printNextSteps(options, failures);
 }
