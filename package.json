@@ -1,9 +1,9 @@
 {
   "name": "@tsdevstack/cli",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/tsdevstack/cli-core.git"
@@ -42,10 +42,11 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' rslib build && node scripts/obfuscate.js",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' rslib build",
     "dev": "echo 'CLI does not need watch mode - already built'",
     "format": "prettier --write .",
     "lint": "eslint .",
@@ -103,7 +104,6 @@
     "@types/node": "^22.19.17",
     "eslint": "^9.39.0",
     "globals": "^17.5.0",
-    "javascript-obfuscator": "^5.3.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2"

@@ -163,12 +163,20 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 
 ## Packages
 
-| Package                                                                                            | Description                                                              |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli)                                 | CLI — project scaffolding, infrastructure generation, deployment         |
-| [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common)                 | Shared NestJS modules — auth, secrets, storage, messaging, observability |
-| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp)                         | MCP server — AI agent integration with 54 tools                          |
-| [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | React bot detection — behavioral analysis + honeypot                     |
+| Package | License | Description |
+| --- | --- | --- |
+| [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI — project scaffolding, infrastructure generation, deployment |
+| [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules — auth, secrets, storage, messaging, observability |
+| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server — AI agent integration with 54 tools |
+| [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection — behavioral analysis + honeypot |
+
+The infrastructure and cloud logic is licensed Apache-2.0 and source-available in the tsdevstack GitHub organization. It is bundled into the CLI rather than published to npm:
+
+| Package                         | Description                                                   |
+| ------------------------------- | ------------------------------------------------------------- |
+| `@tsdevstack/cli-infra`         | Terraform generation and multi-cloud deploy (GCP, AWS, Azure) |
+| `@tsdevstack/cli-cloud-secrets` | Cloud Secret Manager sync across GCP, AWS, and Azure          |
+| `@tsdevstack/infra-core`        | Shared infrastructure utilities used by cli-infra             |
 
 ## Documentation
 
@@ -180,4 +188,4 @@ Join the Discord: [discord.gg/2EMFkqc8QR](https://discord.gg/2EMFkqc8QR)
 
 ## License
 
-MIT
+Apache-2.0
