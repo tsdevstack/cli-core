@@ -1,6 +1,6 @@
 {
   "name": "@tsdevstack/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
   "license": "Apache-2.0",
