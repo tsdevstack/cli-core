@@ -13,6 +13,13 @@ export default defineConfig({
           cli: './src/cli.ts',
         },
       },
+      tools: {
+        rspack: {
+          optimization: {
+            chunkIds: 'named',
+          },
+        },
+      },
       output: {
         minify: true,
         externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
