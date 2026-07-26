@@ -76,7 +76,7 @@ export async function addMessagingTopic(
   const name = topicName as string;
 
   // Get publishers
-  let publishers: string[] = [];
+  let publishers: string[];
   if (options.publishers !== undefined) {
     publishers = parseAndValidateServiceList(
       options.publishers,
@@ -96,7 +96,7 @@ export async function addMessagingTopic(
   }
 
   // Get subscribers
-  let subscribers: string[] = [];
+  let subscribers: string[];
   if (options.subscribers !== undefined) {
     subscribers = parseAndValidateServiceList(
       options.subscribers,

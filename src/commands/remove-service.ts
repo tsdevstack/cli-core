@@ -68,7 +68,7 @@ export async function removeService(
 
     const { selectedService } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedService',
         message: 'Select service to remove:',
         choices: selectableServices.map((s) => ({
@@ -247,8 +247,7 @@ export async function removeService(
       for (const env of Object.keys(infraConfig)) {
         if (env === 'version') continue;
         const envConfig = infraConfig[env] as
-          | Record<string, unknown>
-          | undefined;
+          Record<string, unknown> | undefined;
         for (const name of namesToRemove) {
           if (envConfig && name in envConfig) {
             delete envConfig[name];

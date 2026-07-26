@@ -7,7 +7,7 @@ import { getCredentialsPath } from '../paths/get-credentials-path';
  */
 export function loadCredentialsFile(
   projectRoot: string,
-  provider: CloudProvider
+  provider: CloudProvider,
 ): Record<string, unknown> {
   const credentialsPath = getCredentialsPath(projectRoot, provider);
 
@@ -15,7 +15,8 @@ export function loadCredentialsFile(
     return readJsonFile<Record<string, unknown>>(credentialsPath);
   } catch (error) {
     throw new Error(
-      `Failed to load credentials file for ${provider}: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to load credentials file for ${provider}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 }

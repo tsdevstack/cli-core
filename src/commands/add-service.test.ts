@@ -71,7 +71,7 @@ describe('addService', () => {
 
       expect(rs.mocked(inquirer.prompt).mock.calls[0]?.[0]).toEqual([
         expect.objectContaining({
-          type: 'list',
+          type: 'select',
           name: 'type',
           message: 'Select app type:',
         }),

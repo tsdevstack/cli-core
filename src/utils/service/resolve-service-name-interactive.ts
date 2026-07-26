@@ -20,7 +20,9 @@ import { logger } from '../logger';
  * @param serviceName - Optional service name argument
  * @returns Resolved service name
  */
-export async function resolveServiceNameInteractive(serviceName?: string): Promise<string> {
+export async function resolveServiceNameInteractive(
+  serviceName?: string,
+): Promise<string> {
   // 1. If service name provided as argument, use it
   if (serviceName) {
     return serviceName;
@@ -54,7 +56,7 @@ export async function resolveServiceNameInteractive(serviceName?: string): Promi
 
   const answer = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'serviceName',
       message: 'Select service:',
       choices: serviceChoices,

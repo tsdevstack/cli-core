@@ -31,7 +31,7 @@ export interface RegisterDetachedWorkerOptions {
  * Register a detached worker in framework config
  */
 export async function registerDetachedWorker(
-  options: RegisterDetachedWorkerOptions
+  options: RegisterDetachedWorkerOptions,
 ): Promise<void> {
   logger.newline();
   logger.info('Register Detached Worker');
@@ -47,7 +47,7 @@ export async function registerDetachedWorker(
     throw new CliError(
       'No NestJS services found in framework config',
       'register-detached-worker',
-      'Add a NestJS service first with: npx tsdevstack add-service --type nestjs'
+      'Add a NestJS service first with: npx tsdevstack add-service --type nestjs',
     );
   }
 
@@ -56,7 +56,7 @@ export async function registerDetachedWorker(
   if (!baseServiceName) {
     const { selectedService } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedService',
         message: 'Select base service for the worker:',
         choices: nestjsServices.map((s) => ({
@@ -74,7 +74,7 @@ export async function registerDetachedWorker(
     throw new CliError(
       `Service "${baseServiceName}" not found in framework config`,
       'register-detached-worker',
-      `Available NestJS services: ${nestjsServices.map((s) => s.name).join(', ')}`
+      `Available NestJS services: ${nestjsServices.map((s) => s.name).join(', ')}`,
     );
   }
 
@@ -82,7 +82,7 @@ export async function registerDetachedWorker(
     throw new CliError(
       `Service "${baseServiceName}" is not a NestJS service (type: ${baseService.type})`,
       'register-detached-worker',
-      'Workers can only be attached to NestJS services'
+      'Workers can only be attached to NestJS services',
     );
   }
 
@@ -98,10 +98,15 @@ export async function registerDetachedWorker(
         default: defaultName,
         validate: (input: string) => {
           try {
-            validateWorkerName(input, config.services.map((s) => s.name));
+            validateWorkerName(
+              input,
+              config.services.map((s) => s.name),
+            );
             return true;
           } catch (error) {
-            return error instanceof Error ? error.message : 'Invalid worker name';
+            return error instanceof Error
+              ? error.message
+              : 'Invalid worker name';
           }
         },
       },
@@ -109,7 +114,10 @@ export async function registerDetachedWorker(
     workerName = inputName as string;
   } else {
     // Validate provided name
-    validateWorkerName(workerName, config.services.map((s) => s.name));
+    validateWorkerName(
+      workerName,
+      config.services.map((s) => s.name),
+    );
   }
 
   // Check if worker already exists
@@ -120,12 +128,18 @@ export async function registerDetachedWorker(
       'register-detached-worker',
       existingWorker.type === 'worker'
         ? 'This worker is already registered'
-        : 'A service with this name already exists'
+        : 'A service with this name already exists',
     );
   }
 
   // Check if worker.ts exists (optional warning)
-  const workerFilePath = path.join(projectRoot, 'apps', baseServiceName, 'src', 'worker.ts');
+  const workerFilePath = path.join(
+    projectRoot,
+    'apps',
+    baseServiceName,
+    'src',
+    'worker.ts',
+  );
   const workerExists = fs.existsSync(workerFilePath);
 
   if (!workerExists) {
@@ -163,12 +177,20 @@ export async function registerDetachedWorker(
 
   logger.info('Next steps:');
   if (!workerExists) {
-    logger.info('  1. Create worker.ts and worker.module.ts (see Phase 20 docs)');
+    logger.info(
+      '  1. Create worker.ts and worker.module.ts (see Phase 20 docs)',
+    );
     logger.info('  2. Commit your changes');
-    logger.info('  3. Deploy the service: npx tsdevstack infra:deploy-services --service ' + baseServiceName);
+    logger.info(
+      '  3. Deploy the service: npx tsdevstack infra:deploy-services --service ' +
+        baseServiceName,
+    );
   } else {
     logger.info('  1. Commit your changes');
-    logger.info('  2. Deploy the service: npx tsdevstack infra:deploy-services --service ' + baseServiceName);
+    logger.info(
+      '  2. Deploy the service: npx tsdevstack infra:deploy-services --service ' +
+        baseServiceName,
+    );
   }
   logger.newline();
 }
@@ -184,7 +206,7 @@ function validateWorkerName(name: string, existingNames: string[]): void {
   if (existingNames.includes(name)) {
     throw new CliError(
       `"${name}" already exists in framework config`,
-      'register-detached-worker'
+      'register-detached-worker',
     );
   }
 }

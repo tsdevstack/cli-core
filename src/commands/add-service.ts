@@ -63,7 +63,7 @@ export async function addService(options: AddServiceOptions): Promise<void> {
   if (!serviceType) {
     const typeAnswer = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'type',
         message: 'Select app type:',
         choices: SERVICE_TYPE_CHOICES,

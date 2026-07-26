@@ -54,7 +54,7 @@ export async function updateMessagingTopic(
   if (!topicName) {
     const { selectedTopic } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedTopic',
         message: 'Select topic to update:',
         choices: existingTopics.map((t) => ({ name: t.name, value: t.name })),

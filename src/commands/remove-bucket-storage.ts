@@ -47,7 +47,7 @@ export async function removeBucketStorage(
   if (!bucketName) {
     const { selectedBucket } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedBucket',
         message: 'Select bucket to remove:',
         choices: existingBuckets.map((b) => ({ name: b, value: b })),

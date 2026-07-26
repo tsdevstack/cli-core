@@ -89,7 +89,7 @@ describe('resolveServiceNameInteractive', () => {
       expect(readPackageJson).toHaveBeenCalledOnce();
       expect(inquirer.prompt).toHaveBeenCalledWith([
         {
-          type: 'list',
+          type: 'select',
           name: 'serviceName',
           message: 'Select service:',
           choices: ['auth-service', 'user-service'],
@@ -125,7 +125,7 @@ describe('resolveServiceNameInteractive', () => {
       expect(readPackageJson).toHaveBeenCalledOnce();
       expect(inquirer.prompt).toHaveBeenCalledWith([
         {
-          type: 'list',
+          type: 'select',
           name: 'serviceName',
           message: 'Select service:',
           choices: ['auth-service', 'user-service'],

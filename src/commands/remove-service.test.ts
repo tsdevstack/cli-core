@@ -64,7 +64,7 @@ describe('removeService', () => {
       const firstQuestion = (
         firstCall[0] as unknown as Array<Record<string, unknown>>
       )[0];
-      expect(firstQuestion.type).toBe('list');
+      expect(firstQuestion.type).toBe('select');
     });
 
     it('should filter out coupled workers from selection list', async () => {

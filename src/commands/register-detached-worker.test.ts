@@ -74,7 +74,7 @@ describe('registerDetachedWorker', () => {
 
       expect(inquirer.prompt).toHaveBeenCalledWith([
         expect.objectContaining({
-          type: 'list',
+          type: 'select',
           name: 'selectedService',
           message: 'Select base service for the worker:',
           choices: [

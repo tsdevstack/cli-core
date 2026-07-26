@@ -44,7 +44,7 @@ export async function removeMessagingTopic(
   if (!topicName) {
     const { selectedTopic } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedTopic',
         message: 'Select topic to remove:',
         choices: existingTopics.map((t) => ({ name: t.name, value: t.name })),

@@ -27,16 +27,20 @@ interface ResolveEnvironmentOptions {
 export async function resolveEnvironment(
   options: ResolveEnvironmentOptions,
   availableEnvs: string[],
-  commandName: string
+  commandName: string,
 ): Promise<string> {
   // 1. --env flag provided
   if (options.env) {
     // In local mode, validate against available envs
-    if (!isCIEnv() && availableEnvs.length > 0 && !availableEnvs.includes(options.env)) {
+    if (
+      !isCIEnv() &&
+      availableEnvs.length > 0 &&
+      !availableEnvs.includes(options.env)
+    ) {
       throw new CliError(
         `Environment '${options.env}' not found in credentials`,
         commandName,
-        `Available environments: ${availableEnvs.join(', ')}`
+        `Available environments: ${availableEnvs.join(', ')}`,
       );
     }
     return options.env;
@@ -45,11 +49,15 @@ export async function resolveEnvironment(
   // 2. TARGET_ENV env var
   const targetEnvVar = process.env.TARGET_ENV;
   if (targetEnvVar) {
-    if (!isCIEnv() && availableEnvs.length > 0 && !availableEnvs.includes(targetEnvVar)) {
+    if (
+      !isCIEnv() &&
+      availableEnvs.length > 0 &&
+      !availableEnvs.includes(targetEnvVar)
+    ) {
       throw new CliError(
         `Environment '${targetEnvVar}' (from TARGET_ENV) not found in credentials`,
         commandName,
-        `Available environments: ${availableEnvs.join(', ')}`
+        `Available environments: ${availableEnvs.join(', ')}`,
       );
     }
     return targetEnvVar;
@@ -60,7 +68,7 @@ export async function resolveEnvironment(
     throw new CliError(
       'No environment specified in CI',
       commandName,
-      'Set --env flag or TARGET_ENV environment variable'
+      'Set --env flag or TARGET_ENV environment variable',
     );
   }
 
@@ -75,7 +83,7 @@ export async function resolveEnvironment(
     throw new CliError(
       'No environments available',
       commandName,
-      'Configure credentials first with: npx tsdevstack cloud:init'
+      'Configure credentials first with: npx tsdevstack cloud:init',
     );
   }
 
@@ -84,7 +92,7 @@ export async function resolveEnvironment(
 
   const { selectedEnv } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'selectedEnv',
       message: 'Select target environment:',
       choices: availableEnvs.map((env) => ({

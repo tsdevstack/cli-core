@@ -22,7 +22,7 @@ export interface UnregisterDetachedWorkerOptions {
  * Unregister a detached worker from framework config
  */
 export async function unregisterDetachedWorker(
-  options: UnregisterDetachedWorkerOptions
+  options: UnregisterDetachedWorkerOptions,
 ): Promise<void> {
   logger.newline();
   logger.info('Unregister Detached Worker');
@@ -37,7 +37,7 @@ export async function unregisterDetachedWorker(
     throw new CliError(
       'No detached workers found in framework config',
       'unregister-detached-worker',
-      'Register a worker first with: npx tsdevstack register-detached-worker'
+      'Register a worker first with: npx tsdevstack register-detached-worker',
     );
   }
 
@@ -46,7 +46,7 @@ export async function unregisterDetachedWorker(
   if (!workerName) {
     const { selectedWorker } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'selectedWorker',
         message: 'Select worker to unregister:',
         choices: workers.map((w) => ({
@@ -60,7 +60,7 @@ export async function unregisterDetachedWorker(
 
   // Validate worker exists
   const worker = config.services.find(
-    (s) => s.name === workerName && s.type === 'worker'
+    (s) => s.name === workerName && s.type === 'worker',
   );
 
   if (!worker) {
@@ -70,7 +70,7 @@ export async function unregisterDetachedWorker(
       'unregister-detached-worker',
       availableWorkers
         ? `Available workers: ${availableWorkers}`
-        : 'No workers configured'
+        : 'No workers configured',
     );
   }
 
@@ -79,7 +79,9 @@ export async function unregisterDetachedWorker(
   logger.warn('IMPORTANT: This only removes the worker from framework config.');
   logger.warn('If the worker is deployed, remove it from cloud first:');
   logger.newline();
-  logger.info(`  npx tsdevstack infra:remove-detached-worker --env <env> --worker ${workerName}`);
+  logger.info(
+    `  npx tsdevstack infra:remove-detached-worker --env <env> --worker ${workerName}`,
+  );
   logger.newline();
 
   // Confirmation

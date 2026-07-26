@@ -88,7 +88,7 @@ export async function promptInitOptions(
   } else {
     const answer = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'template',
         message: 'Template:',
         choices: TEMPLATE_CHOICES,
