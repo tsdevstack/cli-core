@@ -21,9 +21,21 @@ describe('generateRedisService', () => {
   it('should configure password-protected server', () => {
     const result = generateRedisService('net');
 
-    expect(result.redis.command).toBe(
+    expect(result.redis.command).toContain(
       'redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}',
     );
+  });
+
+  it('should bound memory so a runaway stream cannot eat the host', () => {
+    const result = generateRedisService('net');
+
+    expect(result.redis.command).toContain('--maxmemory 512mb');
+  });
+
+  it('should use noeviction to match the managed cloud instances', () => {
+    const result = generateRedisService('net');
+
+    expect(result.redis.command).toContain('--maxmemory-policy noeviction');
   });
 
   it('should set redis password environment variable', () => {

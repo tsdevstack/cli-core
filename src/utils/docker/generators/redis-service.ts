@@ -3,6 +3,7 @@
  */
 
 import type { DockerComposeServices } from '../types';
+import { LOCAL_REDIS_MAXMEMORY } from '../../../constants';
 
 export function generateRedisService(
   networkName: string,
@@ -11,7 +12,13 @@ export function generateRedisService(
     redis: {
       image: 'redis:7-alpine',
       restart: 'always',
-      command: 'redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}',
+      // maxmemory bounds the container so a runaway stream or queue can't eat
+      // the host (Docker Desktop degrades badly here). noeviction matches the
+      // managed instances on GCP/AWS/Azure, so local hits the same failure
+      // mode as production instead of silently dropping keys.
+      command:
+        'redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}' +
+        ` --maxmemory ${LOCAL_REDIS_MAXMEMORY} --maxmemory-policy noeviction`,
       volumes: ['./data/redis:/data'],
       ports: ['6379:6379'],
       environment: ['REDIS_PASSWORD=${REDIS_PASSWORD}'],

@@ -16,6 +16,13 @@ export const LOCAL_REDIS_PORT = '6379';
 export const LOCAL_REDIS_PASSWORD = 'redis_pass';
 
 /**
+ * Memory ceiling for the local Redis container.
+ * Managed instances derive maxmemory from their tier; the local container has
+ * no limit by default and will grow until Docker Desktop suffers.
+ */
+export const LOCAL_REDIS_MAXMEMORY = '512mb';
+
+/**
  * Kong/Docker service host for local development
  */
 export const KONG_SERVICE_HOST = 'http://host.docker.internal';
