@@ -12,6 +12,7 @@ const {
   mockScaffoldAuthServiceClient,
   mockScaffoldFrontend,
   mockPrintNextSteps,
+  mockInstallSkills,
   mockCloneTemplateRepo,
   mockRemoveTemplateMetadata,
   mockWriteJsonFile,
@@ -28,6 +29,7 @@ const {
   mockScaffoldAuthServiceClient: rs.fn(),
   mockScaffoldFrontend: rs.fn(),
   mockPrintNextSteps: rs.fn(),
+  mockInstallSkills: rs.fn(),
   mockCloneTemplateRepo: rs.fn(),
   mockRemoveTemplateMetadata: rs.fn(),
   mockWriteJsonFile: rs.fn(),
@@ -57,6 +59,7 @@ rs.mock('../utils/init', () => ({
   scaffoldAuthServiceClient: mockScaffoldAuthServiceClient,
   scaffoldFrontend: mockScaffoldFrontend,
   printNextSteps: mockPrintNextSteps,
+  installSkills: mockInstallSkills,
 }));
 rs.mock('../utils/template', () => ({
   cloneTemplateRepo: mockCloneTemplateRepo,
@@ -102,6 +105,7 @@ describe('init', () => {
 
     mockExistsSync.mockReturnValue(false);
     mockPromptInitOptions.mockResolvedValue(defaultOptions);
+    mockInstallSkills.mockResolvedValue(undefined);
     mockCheckPrerequisites.mockReturnValue({ errors: [], warnings: [] });
     mockGetCliVersion.mockReturnValue('1.0.0');
     mockBuildConfig.mockReturnValue({ ...defaultConfig, services: [] });

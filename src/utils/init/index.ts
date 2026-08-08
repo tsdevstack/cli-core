@@ -14,3 +14,4 @@ export { scaffoldAuthServiceClient } from './scaffold-auth-service-client';
 export { scaffoldFrontend } from './scaffold-frontend';
 export { printNextSteps } from './print-next-steps';
 export type { StepFailure } from './print-next-steps';
+export { installSkills } from './install-skills';

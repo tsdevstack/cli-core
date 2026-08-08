@@ -26,6 +26,7 @@ import {
   scaffoldAuthServiceClient,
   scaffoldFrontend,
   printNextSteps,
+  installSkills,
 } from '../utils/init';
 import type { InitCliArgs, StepFailure } from '../utils/init';
 
@@ -306,6 +307,12 @@ export async function init(args: InitCliArgs): Promise<void> {
       }
     }
   }
+
+  // Step 13c: Optionally set up agent skills for the user's AI assistant.
+  // Runs after scaffold — the project must exist. With --agent <agent> the
+  // install is non-interactive (the path AI agents and CI use); otherwise the
+  // user is prompted. Opt-in; never fails init.
+  await installSkills(projectDir, args.agent);
 
   // Step 14: Print next steps (or issues summary if any post-scaffold step failed)
   printNextSteps(options, failures);

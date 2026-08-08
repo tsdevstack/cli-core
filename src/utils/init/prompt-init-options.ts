@@ -17,6 +17,7 @@ export interface InitCliArgs {
   name?: string;
   template?: string;
   frontendName?: string;
+  agent?: string;
 }
 
 export interface InitOptions {

@@ -147,6 +147,10 @@ program
     '-f, --frontend-name <name>',
     'Frontend app name (for fullstack-auth)',
   )
+  .option(
+    '-a, --agent <agent>',
+    'Install the tsdevstack agent skills for this AI agent without prompting (e.g. claude-code, cursor)',
+  )
   .action(
     wrapCommand(async (options: InitCliArgs) => {
       await init(options);
