@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@rstest/core';
 import { mergeKongConfigs } from './merge-kong-configs';
 import type { KongTemplate } from './types';
+import { CliError } from '../errors';
 
 describe('mergeKongConfigs', () => {
   describe('Basic merging', () => {
@@ -297,20 +298,21 @@ describe('mergeKongConfigs', () => {
   });
 
   describe('Plugins merging', () => {
-    it('should use user plugins only (framework plugins are ignored)', () => {
-      const framework: KongTemplate = {
-        _format_version: '3.0',
-        _transform: true,
-        services: [],
-        consumers: [],
-        plugins: [{ name: 'should-be-ignored', config: {} }],
-      };
+    const empty: KongTemplate = {
+      _format_version: '3.0',
+      _transform: true,
+      services: [],
+      consumers: [],
+      plugins: [],
+    };
 
+    it('should put framework global plugins first, then user plugins', () => {
+      const framework: KongTemplate = {
+        ...empty,
+        plugins: [{ name: 'tsdevstack-strip-identity', config: {} }],
+      };
       const user: KongTemplate = {
-        _format_version: '3.0',
-        _transform: true,
-        services: [],
-        consumers: [],
+        ...empty,
         plugins: [
           { name: 'cors', config: { origins: ['*'] } },
           { name: 'rate-limiting', config: { minute: 100 } },
@@ -319,32 +321,81 @@ describe('mergeKongConfigs', () => {
 
       const result = mergeKongConfigs(framework, user);
 
-      // Plugins come ONLY from user (operational plugins)
-      expect(result.plugins).toHaveLength(2);
-      expect(result.plugins![0].name).toBe('cors');
-      expect(result.plugins![1].name).toBe('rate-limiting');
+      expect(result.plugins!.map((p) => p.name)).toEqual([
+        'tsdevstack-strip-identity',
+        'cors',
+        'rate-limiting',
+      ]);
     });
 
-    it('should handle empty user plugins', () => {
+    it('should keep framework plugins when the user file has none', () => {
       const framework: KongTemplate = {
-        _format_version: '3.0',
-        _transform: true,
-        services: [],
-        consumers: [],
-        plugins: [{ name: 'ignored', config: {} }],
+        ...empty,
+        plugins: [{ name: 'tsdevstack-strip-identity', config: {} }],
       };
-
-      const user: KongTemplate = {
-        _format_version: '3.0',
-        _transform: true,
-        services: [],
-        consumers: [],
-        plugins: [],
-      };
+      const user: KongTemplate = { ...empty, plugins: undefined };
 
       const result = mergeKongConfigs(framework, user);
 
-      expect(result.plugins).toHaveLength(0);
+      expect(result.plugins!.map((p) => p.name)).toEqual([
+        'tsdevstack-strip-identity',
+      ]);
+    });
+
+    it('should handle no plugins on either side', () => {
+      const result = mergeKongConfigs(
+        { ...empty, plugins: undefined },
+        { ...empty, plugins: undefined },
+      );
+
+      expect(result.plugins).toEqual([]);
+    });
+  });
+
+  describe('Framework plugin name collisions', () => {
+    const framework: KongTemplate = {
+      _format_version: '3.0',
+      _transform: true,
+      services: [],
+      plugins: [{ name: 'tsdevstack-strip-identity', config: {} }],
+    };
+
+    it('should fail with a CliError when the user file declares a framework global plugin', () => {
+      const user: KongTemplate = {
+        services: [],
+        plugins: [
+          { name: 'cors', config: {} },
+          { name: 'tsdevstack-strip-identity', config: {} },
+        ],
+      };
+
+      expect(() => mergeKongConfigs(framework, user)).toThrow(CliError);
+      expect(() => mergeKongConfigs(framework, user)).toThrow(
+        /tsdevstack-strip-identity/,
+      );
+    });
+
+    it('should name each colliding plugin once', () => {
+      const user: KongTemplate = {
+        services: [],
+        plugins: [
+          { name: 'tsdevstack-strip-identity', config: {} },
+          { name: 'tsdevstack-strip-identity', config: {} },
+        ],
+      };
+
+      expect(() => mergeKongConfigs(framework, user)).toThrow(
+        'kong.user.yml declares global plugin(s) that tsdevstack already generates: tsdevstack-strip-identity',
+      );
+    });
+
+    it('should allow user plugins with other names', () => {
+      const user: KongTemplate = {
+        services: [],
+        plugins: [{ name: 'pre-function', config: {} }],
+      };
+
+      expect(() => mergeKongConfigs(framework, user)).not.toThrow();
     });
   });
 

@@ -7,7 +7,11 @@ import type { SecretsFile } from './types';
 import { autoDetectAllowedOrigins } from './auto-detect-allowed-origins';
 import { createServiceSection } from './create-service-section';
 import { addJwtKeysToAuthService } from './add-jwt-keys-to-auth-service';
-import { KONG_SERVICE_HOST, KONG_GATEWAY_URL } from '../../constants';
+import {
+  KONG_SERVICE_HOST,
+  KONG_GATEWAY_URL,
+  ADMIN_EMAILS_INSTRUCTION,
+} from '../../constants';
 
 /**
  * Generate .secrets.user.json
@@ -35,6 +39,11 @@ export function generateUserSecretsFile(config: FrameworkConfig): SecretsFile {
     EMAIL_PROVIDER: 'console', // 'console' for local dev (logs emails), 'resend' for production
   };
 
+  // First admins: confirmed users listed here are promoted to ADMIN at login
+  if (useAuthTemplate) {
+    secrets.ADMIN_EMAILS = '';
+  }
+
   // Only add KONG_CORS_ORIGINS if there are frontend services
   if (allowedOrigins) {
     secrets.KONG_CORS_ORIGINS = allowedOrigins;
@@ -56,6 +65,7 @@ export function generateUserSecretsFile(config: FrameworkConfig): SecretsFile {
         'ALLOWED_ORIGINS here are for LOCAL development (http://localhost:*)',
       framework_secrets:
         'Service URLs and API keys are auto-generated in .secrets.tsdevstack.json and available to all backend services',
+      ...(useAuthTemplate ? { admin_emails: ADMIN_EMAILS_INSTRUCTION } : {}),
     },
     secrets,
   };

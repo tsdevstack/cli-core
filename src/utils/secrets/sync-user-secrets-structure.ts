@@ -2,9 +2,10 @@
  * Sync user secrets structure with current config
  */
 
-import type { FrameworkConfig } from '../config';
+import { type FrameworkConfig, hasAuthTemplate } from '../config';
 import type { SecretsFile } from './types';
 import { createServiceSection } from './create-service-section';
+import { ADMIN_EMAILS_INSTRUCTION } from '../../constants';
 
 /**
  * Sync user secrets structure with current config
@@ -49,6 +50,21 @@ export function syncUserSecretsStructure(
   // Add DOMAIN if missing (base domain for cloud deployment)
   if (currentSecrets.DOMAIN === undefined) {
     currentSecrets.DOMAIN = ''; // User must configure for cloud deployment
+    updated = true;
+  }
+
+  // Add ADMIN_EMAILS if missing (auth template: first admins, promoted at login)
+  if (hasAuthTemplate(config) && currentSecrets.ADMIN_EMAILS === undefined) {
+    currentSecrets.ADMIN_EMAILS = ''; // User lists admin emails
+    updated = true;
+  }
+
+  // Explain ADMIN_EMAILS in existing files too (auth template only)
+  if (hasAuthTemplate(config) && !result.$important?.admin_emails) {
+    result.$important = {
+      ...result.$important,
+      admin_emails: ADMIN_EMAILS_INSTRUCTION,
+    };
     updated = true;
   }
 

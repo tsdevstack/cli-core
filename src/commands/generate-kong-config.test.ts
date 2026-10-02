@@ -8,6 +8,11 @@ import * as kongMergeModule from '../utils/kong/merge-kong-configs';
 import * as findProjectRootModule from '../utils/paths/find-project-root';
 import * as configModule from '../utils/config';
 import * as openapiModule from '../utils/openapi';
+import * as localKongContextModule from '../utils/kong/write-local-kong-build-context';
+import * as validateTransformerModule from '../utils/kong/validate-request-transformer-headers';
+import * as validateStripModule from '../utils/kong/validate-strip-identity-plugin';
+import * as warnConsumersModule from '../utils/kong/warn-static-partner-consumers';
+import * as defaultLimitsModule from '../utils/kong/build-api-key-default-limits';
 import { generateKongConfig } from './generate-kong-config';
 import type { FrameworkConfig } from '../utils/config';
 import { CliError } from '../utils/errors';
@@ -21,6 +26,11 @@ rs.mock('../utils/kong/merge-kong-configs', { mock: true });
 rs.mock('../utils/paths/find-project-root', { mock: true });
 rs.mock('../utils/config', { mock: true });
 rs.mock('../utils/openapi', { mock: true });
+rs.mock('../utils/kong/write-local-kong-build-context', { mock: true });
+rs.mock('../utils/kong/validate-request-transformer-headers', { mock: true });
+rs.mock('../utils/kong/validate-strip-identity-plugin', { mock: true });
+rs.mock('../utils/kong/warn-static-partner-consumers', { mock: true });
+rs.mock('../utils/kong/build-api-key-default-limits', { mock: true });
 
 describe('generateKongConfig', () => {
   const mockLogger = {
@@ -168,6 +178,38 @@ describe('generateKongConfig', () => {
         kongSecurityModule.generateSecurityBasedServices,
       ).not.toHaveBeenCalled();
     });
+
+    it('should check kong.custom.yml for the strip plugin and identity header removal', () => {
+      const customConfig = { _format_version: '3.0', services: [] };
+      rs.mocked(fsModule.isFile).mockImplementation((p: string) =>
+        p.endsWith('kong.custom.yml'),
+      );
+      rs.mocked(fsModule.readYamlFile).mockReturnValue(customConfig);
+
+      generateKongConfig();
+
+      expect(
+        validateStripModule.validateStripIdentityPlugin,
+      ).toHaveBeenCalledWith(customConfig, 'kong.custom.yml');
+      expect(
+        validateTransformerModule.validateRequestTransformerHeaders,
+      ).toHaveBeenCalledWith(customConfig, 'kong.custom.yml');
+    });
+
+    it('should write the local Kong image build context', () => {
+      rs.mocked(fsModule.isFile).mockImplementation((p: string) =>
+        p.endsWith('kong.custom.yml'),
+      );
+      rs.mocked(fsModule.readYamlFile).mockReturnValue({
+        _format_version: '3.0',
+      });
+
+      generateKongConfig();
+
+      expect(
+        localKongContextModule.writeLocalKongBuildContext,
+      ).toHaveBeenCalledWith('/mock/project');
+    });
   });
 
   describe('Normal mode - auth template', () => {
@@ -295,6 +337,22 @@ describe('generateKongConfig', () => {
       expect(tsdevstackWrite).toBeDefined();
     });
 
+    it('should write the framework global plugins into kong.tsdevstack.yml', () => {
+      generateKongConfig();
+
+      const tsdevstackWrite = rs
+        .mocked(fsModule.writeYamlFile)
+        .mock.calls.find((call) =>
+          (call[0] as string).endsWith('kong.tsdevstack.yml'),
+        );
+      expect(tsdevstackWrite![1]).toEqual(
+        expect.objectContaining({
+          services: mockKongServices,
+          plugins: [{ name: 'tsdevstack-strip-identity', config: {} }],
+        }),
+      );
+    });
+
     it('should create kong.user.yml when it does not exist', () => {
       // isFile returns true for openapi.json, false for kong.user.yml and kong.custom.yml
       rs.mocked(fsModule.isFile).mockImplementation((p: string) =>
@@ -321,6 +379,69 @@ describe('generateKongConfig', () => {
       generateKongConfig();
 
       expect(kongModule.getDefaultKongPlugins).not.toHaveBeenCalled();
+      expect(
+        validateTransformerModule.validateRequestTransformerHeaders,
+      ).toHaveBeenCalledWith(existingUserConfig, 'kong.user.yml');
+    });
+
+    it('should write a new kong.user.yml as plain YAML without injected comments', () => {
+      generateKongConfig();
+
+      const userWrite = rs
+        .mocked(fsModule.writeYamlFile)
+        .mock.calls.find((call) =>
+          (call[0] as string).endsWith('kong.user.yml'),
+        );
+      expect(userWrite).toBeDefined();
+      expect(fsModule.writeTextFile).not.toHaveBeenCalled();
+      expect(
+        validateTransformerModule.validateRequestTransformerHeaders,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should write the local Kong image build context after kong.yml', () => {
+      generateKongConfig();
+
+      expect(
+        localKongContextModule.writeLocalKongBuildContext,
+      ).toHaveBeenCalledWith('/mock/project');
+      const writeOrder = rs.mocked(fsModule.writeYamlFile).mock
+        .invocationCallOrder;
+      const contextOrder = rs.mocked(
+        localKongContextModule.writeLocalKongBuildContext,
+      ).mock.invocationCallOrder[0];
+      expect(contextOrder).toBeGreaterThan(Math.max(...writeOrder));
+    });
+
+    it('should use the configured globalPrefix', () => {
+      generateKongConfig();
+
+      expect(
+        kongSecurityModule.generateSecurityBasedServices,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serviceName: 'user-service',
+          globalPrefix: 'users',
+        }),
+      );
+    });
+
+    it('should fall back to the shared rule (name without -service) when globalPrefix is unset', () => {
+      rs.mocked(configModule.loadFrameworkConfig).mockReturnValue({
+        ...mockConfigNoAuth,
+        services: [{ name: 'user-service', type: 'nestjs', port: 3002 }],
+      });
+
+      generateKongConfig();
+
+      expect(
+        kongSecurityModule.generateSecurityBasedServices,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serviceName: 'user-service',
+          globalPrefix: 'user',
+        }),
+      );
     });
 
     it('should merge configs and write final kong.yml', () => {
@@ -335,6 +456,132 @@ describe('generateKongConfig', () => {
         (call[0] as string).endsWith('kong.yml'),
       );
       expect(kongWrite).toBeDefined();
+    });
+  });
+
+  describe('Normal mode - partner API keys', () => {
+    const partnerParsed = {
+      ...mockParsedSecurity,
+      groupedRoutes: {
+        ...mockParsedSecurity.groupedRoutes,
+        partner: [{ path: '/users/v1/list', method: 'GET' }],
+      },
+    };
+    const userConfig = {
+      _format_version: '3.0',
+      services: [],
+      plugins: [{ name: 'rate-limiting', config: { minute: 100 } }],
+    };
+
+    beforeEach(() => {
+      rs.mocked(configModule.loadFrameworkConfig).mockReturnValue(
+        mockConfigNoAuth,
+      );
+      rs.mocked(fsModule.isFile).mockImplementation(
+        (p: string) =>
+          p.endsWith('openapi.json') || p.endsWith('kong.user.yml'),
+      );
+      rs.mocked(fsModule.readYamlFile).mockReturnValue(userConfig);
+      rs.mocked(configModule.resolveApiKeyIpLimit).mockReturnValue(120);
+      rs.mocked(defaultLimitsModule.buildApiKeyDefaultLimits).mockReturnValue({
+        minute: 100,
+      });
+    });
+
+    it('should pass the default limits from kong.user.yml and the per-IP ceiling to the generator', () => {
+      rs.mocked(openapiModule.parseOpenApiSecurity).mockReturnValue(
+        partnerParsed as unknown as ReturnType<
+          typeof openapiModule.parseOpenApiSecurity
+        >,
+      );
+
+      generateKongConfig();
+
+      expect(defaultLimitsModule.buildApiKeyDefaultLimits).toHaveBeenCalledWith(
+        userConfig,
+      );
+      expect(configModule.resolveApiKeyIpLimit).toHaveBeenCalledWith(
+        mockConfigNoAuth,
+      );
+      expect(
+        kongSecurityModule.generateSecurityBasedServices,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          partnerApi: { defaultLimits: { minute: 100 }, ipLimitPerMinute: 120 },
+        }),
+      );
+    });
+
+    it('should read kong.user.yml before writing kong.tsdevstack.yml', () => {
+      generateKongConfig();
+
+      const readOrder = rs.mocked(fsModule.readYamlFile).mock
+        .invocationCallOrder[0];
+      const writeCall = rs
+        .mocked(fsModule.writeYamlFile)
+        .mock.calls.findIndex((call) =>
+          (call[0] as string).endsWith('kong.tsdevstack.yml'),
+        );
+      const writeOrder = rs.mocked(fsModule.writeYamlFile).mock
+        .invocationCallOrder[writeCall];
+      expect(readOrder).toBeLessThan(writeOrder);
+    });
+
+    it('should not derive default limits without partner routes', () => {
+      generateKongConfig();
+
+      expect(
+        defaultLimitsModule.buildApiKeyDefaultLimits,
+      ).not.toHaveBeenCalled();
+      expect(
+        kongSecurityModule.generateSecurityBasedServices,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          partnerApi: { defaultLimits: {}, ipLimitPerMinute: 120 },
+        }),
+      );
+    });
+
+    it('should warn about static partner consumers in an existing kong.user.yml', () => {
+      generateKongConfig();
+
+      expect(
+        warnConsumersModule.warnStaticPartnerConsumers,
+      ).toHaveBeenCalledWith(userConfig, 'kong.user.yml');
+    });
+
+    it('should print an info line for @PartnerApi() routes without the auth template', () => {
+      rs.mocked(openapiModule.parseOpenApiSecurity).mockReturnValue(
+        partnerParsed as unknown as ReturnType<
+          typeof openapiModule.parseOpenApiSecurity
+        >,
+      );
+
+      generateKongConfig();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '@PartnerApi() routes in user-service, but no auth template',
+        ),
+      );
+    });
+
+    it('should not print the info line with the auth template', () => {
+      rs.mocked(configModule.loadFrameworkConfig).mockReturnValue(
+        mockConfigWithAuth,
+      );
+      rs.mocked(configModule.hasAuthTemplate).mockReturnValue(true);
+      rs.mocked(openapiModule.parseOpenApiSecurity).mockReturnValue(
+        partnerParsed as unknown as ReturnType<
+          typeof openapiModule.parseOpenApiSecurity
+        >,
+      );
+
+      generateKongConfig();
+
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        expect.stringContaining('no auth template'),
+      );
     });
   });
 });

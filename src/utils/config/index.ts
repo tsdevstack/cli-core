@@ -9,3 +9,5 @@ export * from './find-service';
 export * from './service-exists';
 export * from './has-auth-template';
 export * from './get-nestjs-service-names';
+export * from './resolve-global-prefix';
+export * from './resolve-api-key-ip-limit';

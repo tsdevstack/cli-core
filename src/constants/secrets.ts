@@ -37,11 +37,19 @@ export const NEXTJS_SECRETS = [
 ] as const;
 
 /**
- * User secrets that auth-service needs (TTLs + APP_URL for email links)
+ * User secrets that auth-service needs (TTLs, APP_URL for email links,
+ * ADMIN_EMAILS for promoting the first admins)
  */
 export const AUTH_USER_SECRETS = [
   'ACCESS_TOKEN_TTL',
   'REFRESH_TOKEN_TTL',
   'CONFIRMATION_TOKEN_TTL',
   'APP_URL',
+  'ADMIN_EMAILS',
 ] as const;
+
+/**
+ * Explains ADMIN_EMAILS in .secrets.user.json (auth template only)
+ */
+export const ADMIN_EMAILS_INSTRUCTION =
+  'ADMIN_EMAILS: comma-separated emails; a confirmed user listed here becomes ADMIN at the next login';

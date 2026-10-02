@@ -4,41 +4,30 @@
  */
 
 import type { KongPlugin } from './types';
+import { KONG_REQUEST_ID_HEADER, KONG_TRUST_HEADER } from '../../constants';
+import { buildKongRedisConfig } from './build-kong-redis-config';
 
 /**
- * Returns the default set of operational Kong plugins
- * Includes: request-transformer (security headers), CORS, rate-limiting, correlation-id
+ * Returns the default set of operational Kong plugins for a new kong.user.yml:
+ * request-transformer (trust token), CORS, rate-limiting, correlation-id.
  *
- * @param useAuthTemplate - When true, includes framework JWT claim headers
- *   (Sub, Email, Role, Confirmed) in the request-transformer remove list.
- *   When false, omits them (external OIDC providers use different claims).
+ * The request-transformer only replaces X-Kong-Trust with the gateway's
+ * token and removes X-Kong-Request-Id. It must not remove identity headers
+ * (X-Consumer-*, X-Userinfo, ...): it runs after the auth plugins and would
+ * delete the values they set. Client-sent identity headers are removed by
+ * the framework plugin tsdevstack-strip-identity instead.
  */
-export function getDefaultKongPlugins(useAuthTemplate: boolean): KongPlugin[] {
-  const jwtClaimHeaders = useAuthTemplate
-    ? [
-        'X-JWT-Claim-Sub',
-        'X-JWT-Claim-Email',
-        'X-JWT-Claim-Role',
-        'X-JWT-Claim-Confirmed',
-      ]
-    : [];
-
+export function getDefaultKongPlugins(): KongPlugin[] {
   return [
-    // Header security and trust token (Phase 5)
+    // Trust token: proves to backends that the request came through Kong
     {
       name: 'request-transformer',
       config: {
         remove: {
-          headers: [
-            'X-Consumer-Id',
-            'X-Consumer-Username',
-            ...jwtClaimHeaders,
-            'X-Kong-Request-Id',
-            'X-Kong-Trust',
-          ],
+          headers: [KONG_REQUEST_ID_HEADER, KONG_TRUST_HEADER],
         },
         add: {
-          headers: ['X-Kong-Trust:${KONG_TRUST_TOKEN}'],
+          headers: [`${KONG_TRUST_HEADER}:\${KONG_TRUST_TOKEN}`],
         },
       },
     },
@@ -60,19 +49,15 @@ export function getDefaultKongPlugins(useAuthTemplate: boolean): KongPlugin[] {
         max_age: 3600,
       },
     },
-    // Rate limiting (Redis for distributed deployments)
+    // Rate limiting (Redis for distributed deployments). Global default for
+    // every caller; on partner routes its windows become the API key
+    // plugin's default limits, counted per key.
     {
       name: 'rate-limiting',
       config: {
         minute: 100,
         policy: 'redis',
-        redis: {
-          host: '${REDIS_HOST}',
-          port: '${REDIS_PORT}',
-          password: '${REDIS_PASSWORD}',
-          database: 0,
-          timeout: 2000,
-        },
+        redis: buildKongRedisConfig(),
       },
     },
     // Correlation ID

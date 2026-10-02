@@ -23,3 +23,8 @@ export const PACKAGES_DIR = 'packages';
  * Maps each service to the secret keys it references
  */
 export const SECRET_MAP_FILENAME = 'secret-map.json';
+
+/**
+ * npm package name of the CLI (used to locate the package root and its assets)
+ */
+export const CLI_PACKAGE_NAME = '@tsdevstack/cli';

@@ -48,6 +48,7 @@ export function createMockContext() {
     findProjectRoot: rs.fn(),
     getConfigPath: rs.fn(),
     loadFrameworkConfig: rs.fn(),
+    hasAuthTemplate: rs.fn(() => false),
     readJsonFile: rs.fn(),
     writeJsonFile: rs.fn(),
     isFile: rs.fn(),
@@ -71,6 +72,19 @@ export function createMockContext() {
     SECRET_MAP_FILENAME: 'secret-map.json',
     executeCommand: rs.fn(() => ''),
     CLOUD_PROVIDERS: ['gcp', 'aws', 'azure'] as const,
+    resolveCliAssetDir: rs.fn(),
+    resolveGlobalPrefix: rs.fn(),
+    resolveApiKeyIpLimit: rs.fn(() => 600),
+    buildApiKeyDefaultLimits: rs.fn(() => ({})),
+    warnStaticPartnerConsumers: rs.fn(() => []),
+    generateKongDockerfile: rs.fn(() => ''),
+    buildKongPluginList: rs.fn(() => ['bundled', 'oidc']),
+    listKongPluginDirs: rs.fn(() => []),
+    stageKongPlugins: rs.fn(() => ['bundled', 'oidc']),
+    writeKongBuildContext: rs.fn(() => ['bundled', 'oidc']),
+    buildFrameworkKongConfig: rs.fn(),
+    validateRequestTransformerHeaders: rs.fn(() => []),
+    validateStripIdentityPlugin: rs.fn(() => true),
   };
 }
 

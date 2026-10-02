@@ -165,6 +165,75 @@ describe('syncUserSecretsStructure', () => {
     });
   });
 
+  describe('ADMIN_EMAILS syncing', () => {
+    const completeSecrets = {
+      ACCESS_TOKEN_TTL: '900',
+      REFRESH_TOKEN_TTL: '604800',
+      CONFIRMATION_TOKEN_TTL: '86400',
+      APP_URL: 'http://localhost:3000',
+      DOMAIN: '',
+    };
+
+    it('should add an empty ADMIN_EMAILS when auth template is enabled', () => {
+      const existing: SecretsFile = { secrets: { ...completeSecrets } };
+      const config = createMockFrameworkConfig({
+        framework: { template: 'auth' },
+        services: [],
+      });
+
+      const result = syncUserSecretsStructure(existing, config);
+
+      expect(result?.secrets.ADMIN_EMAILS).toBe('');
+      expect(result?.$important?.admin_emails).toContain('ADMIN_EMAILS');
+    });
+
+    it('should add the ADMIN_EMAILS instruction next to existing $important entries', () => {
+      const existing: SecretsFile = {
+        $important: { safe_to_edit: 'keep me' },
+        secrets: { ...completeSecrets, ADMIN_EMAILS: 'me@example.com' },
+      };
+      const config = createMockFrameworkConfig({
+        framework: { template: 'auth' },
+        services: [],
+      });
+
+      const result = syncUserSecretsStructure(existing, config);
+
+      expect(result?.$important).toEqual({
+        safe_to_edit: 'keep me',
+        admin_emails: expect.stringContaining('ADMIN_EMAILS'),
+      });
+      expect(result?.secrets.ADMIN_EMAILS).toBe('me@example.com');
+    });
+
+    it('should keep an existing ADMIN_EMAILS value', () => {
+      const existing: SecretsFile = {
+        $important: { admin_emails: 'already explained' },
+        secrets: { ...completeSecrets, ADMIN_EMAILS: 'me@example.com' },
+      };
+      const config = createMockFrameworkConfig({
+        framework: { template: 'auth' },
+        services: [],
+      });
+
+      const result = syncUserSecretsStructure(existing, config);
+
+      expect(result).toBeNull();
+      expect(existing.secrets.ADMIN_EMAILS).toBe('me@example.com');
+    });
+
+    it('should not add ADMIN_EMAILS without the auth template', () => {
+      const existing: SecretsFile = { secrets: { ...completeSecrets } };
+      const config = createMockFrameworkConfig({ services: [] });
+
+      const result = syncUserSecretsStructure(existing, config);
+
+      expect(result).toBeNull();
+      expect(existing.secrets.ADMIN_EMAILS).toBeUndefined();
+      expect(existing.$important).toBeUndefined();
+    });
+  });
+
   describe('Deprecated properties cleanup', () => {
     it('should remove ALLOWED_ORIGINS from existing service sections', () => {
       const existing: SecretsFile = {

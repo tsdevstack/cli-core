@@ -109,6 +109,28 @@ describe('generateUserSecretsFile', () => {
     });
   });
 
+  describe('ADMIN_EMAILS', () => {
+    it('should add an empty ADMIN_EMAILS with an instruction when auth template is enabled', () => {
+      const config = createMockFrameworkConfig({
+        framework: { template: 'fullstack-auth' },
+      });
+
+      const result = generateUserSecretsFile(config);
+
+      expect(result.secrets.ADMIN_EMAILS).toBe('');
+      expect(result.$important?.admin_emails).toContain('ADMIN_EMAILS');
+    });
+
+    it('should not add ADMIN_EMAILS without the auth template', () => {
+      const config = createMockFrameworkConfig();
+
+      const result = generateUserSecretsFile(config);
+
+      expect(result.secrets.ADMIN_EMAILS).toBeUndefined();
+      expect(result.$important?.admin_emails).toBeUndefined();
+    });
+  });
+
   describe('JWT keys generation', () => {
     it('should not generate JWT keys (moved to framework file)', () => {
       const config = createMockFrameworkConfig({

@@ -61,6 +61,12 @@ export type {
   KongTemplate,
   KongUpstream,
   KongUpstreamTarget,
+  PartnerApiSettings,
 } from '../utils/kong/types';
+export type { ApiKeyDefaultLimits } from '../utils/kong/plugin-types';
 export type { ServiceRouteConfig } from '../utils/kong/generate-security-routes';
 export type { JsonValue } from '../utils/kong/resolve-env-vars';
+export type { GenerateKongDockerfileOptions } from '../utils/kong/generate-kong-dockerfile';
+export type { BuildKongPluginListOptions } from '../utils/kong/build-kong-plugin-list';
+export type { StageKongPluginsOptions } from '../utils/kong/stage-kong-plugins';
+export type { WriteKongBuildContextOptions } from '../utils/kong/write-kong-build-context';

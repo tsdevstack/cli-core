@@ -7,7 +7,7 @@
  * 1. Reads service configuration from .tsdevstack/config.json
  * 2. Parses OpenAPI specs from each service (apps/{service}/docs/openapi.json)
  * 3. Generates Kong services based on security metadata (public, JWT, partner)
- * 4. Creates kong.tsdevstack.yml (framework routes with placeholders)
+ * 4. Creates kong.tsdevstack.yml (framework routes and global plugins, with placeholders)
  * 5. Creates/updates kong.user.yml (user customizations with placeholders)
  * 6. Merges framework + user configs
  * 7. Resolves placeholders with actual values from .secrets.local.json
@@ -20,7 +20,9 @@
  * Security Types:
  * - Public routes: No authentication required
  * - JWT routes: Bearer token authentication via jwt-oidc plugin
- * - Partner routes: API key authentication via key-auth plugin (exposed at /api prefix)
+ * - Partner routes: API keys checked by the tsdevstack-api-key plugin against
+ *   Redis (exposed at /api prefix), behind a per-IP ceiling
+ * Every route is exact (anchored path, OpenAPI methods plus OPTIONS).
  *
  * Files:
  * - kong.tsdevstack.yml: Framework routes (committed, auto-generated)
@@ -32,15 +34,9 @@
  */
 
 import * as path from 'path';
-import * as yaml from 'js-yaml';
 import { loadLocalSecrets, getRequiredSecret } from '../utils/secrets';
 import { logger } from '../utils/logger';
-import {
-  isFile,
-  writeYamlFile,
-  writeTextFile,
-  readYamlFile,
-} from '../utils/fs';
+import { isFile, writeYamlFile, readYamlFile } from '../utils/fs';
 import {
   resolveEnvVars,
   type KongTemplate,
@@ -50,12 +46,24 @@ import {
 } from '../utils/kong';
 import { CliError } from '../utils/errors';
 import { findProjectRoot } from '../utils/paths/find-project-root';
-import { loadFrameworkConfig, hasAuthTemplate } from '../utils/config';
-import { KONG_REDIS_HOST } from '../constants';
+import {
+  loadFrameworkConfig,
+  hasAuthTemplate,
+  resolveApiKeyIpLimit,
+} from '../utils/config';
+import { KONG_REDIS_HOST, KONG_LOCAL_BUILD_CONTEXT } from '../constants';
 import { parseOpenApiSecurity } from '../utils/openapi';
 import { generateSecurityBasedServices } from '../utils/kong/generate-security-routes';
 import { type OperationContext } from '../utils/types/operation-context';
 import { mergeKongConfigs } from '../utils/kong/merge-kong-configs';
+import { buildFrameworkKongConfig } from '../utils/kong/build-framework-kong-config';
+import { validateRequestTransformerHeaders } from '../utils/kong/validate-request-transformer-headers';
+import { validateStripIdentityPlugin } from '../utils/kong/validate-strip-identity-plugin';
+import { warnStaticPartnerConsumers } from '../utils/kong/warn-static-partner-consumers';
+import { buildApiKeyDefaultLimits } from '../utils/kong/build-api-key-default-limits';
+import type { PartnerApiSettings } from '../utils/kong/types';
+import { writeLocalKongBuildContext } from '../utils/kong/write-local-kong-build-context';
+import { resolveGlobalPrefix } from '../utils/config/resolve-global-prefix';
 
 /**
  * Main generation function
@@ -90,6 +98,8 @@ export function generateKongConfig(_context?: OperationContext): void {
 
     // Read custom config
     const customConfig = readYamlFile(customConfigPath) as KongTemplate;
+    validateStripIdentityPlugin(customConfig, 'kong.custom.yml');
+    validateRequestTransformerHeaders(customConfig, 'kong.custom.yml');
 
     // Resolve placeholders
     const resolvedConfig = resolveEnvVars(
@@ -104,6 +114,8 @@ export function generateKongConfig(_context?: OperationContext): void {
     writeYamlFile(path.join(rootDir, 'kong.yml'), resolvedConfig);
     logger.success('Generated kong.yml from kong.custom.yml');
     logger.newline();
+
+    writeLocalKongBuildContext(rootDir);
 
     logger.complete('Kong configuration generated (custom mode)!');
     logger.newline();
@@ -220,6 +232,51 @@ export function generateKongConfig(_context?: OperationContext): void {
 
   logger.newline();
 
+  // kong.user.yml is read (and created when missing) before the framework
+  // config is built: the partner services' API key default limits come from
+  // its global rate-limiting plugin.
+  logger.info('Checking kong.user.yml...');
+  const userConfigPath = path.join(rootDir, 'kong.user.yml');
+
+  let userConfig: KongTemplate;
+
+  if (!isFile(userConfigPath)) {
+    logger.info('   kong.user.yml not found - creating template...');
+
+    // User file: operational global plugins only (no services, no consumers)
+    userConfig = {
+      _format_version: '3.0',
+      _transform: true,
+      services: [],
+      plugins: getDefaultKongPlugins(),
+    };
+
+    writeYamlFile(userConfigPath, userConfig);
+    logger.success('Created kong.user.yml template');
+  } else {
+    logger.info('   kong.user.yml exists - using existing file');
+    userConfig = readYamlFile(userConfigPath) as KongTemplate;
+    validateRequestTransformerHeaders(userConfig, 'kong.user.yml');
+    warnStaticPartnerConsumers(userConfig, 'kong.user.yml');
+  }
+  logger.newline();
+
+  const partnerServices = parsedServices.filter(
+    (service) => service.parsed.groupedRoutes.partner.length > 0,
+  );
+  const partnerApi: PartnerApiSettings = {
+    defaultLimits:
+      partnerServices.length > 0 ? buildApiKeyDefaultLimits(userConfig) : {},
+    ipLimitPerMinute: resolveApiKeyIpLimit(config),
+  };
+
+  if (partnerServices.length > 0 && !useAuthTemplate) {
+    logger.info(
+      `@PartnerApi() routes in ${partnerServices.map((service) => service.name).join(', ')}, but no auth template: API keys must be written to Redis by your project (record format and key layout: API keys docs).`,
+    );
+    logger.newline();
+  }
+
   // Step 3: Generate Kong services based on security metadata
   logger.info('Step 3: Generating Kong services...');
   logger.newline();
@@ -270,8 +327,9 @@ export function generateKongConfig(_context?: OperationContext): void {
     const generatedServices = generateSecurityBasedServices({
       serviceName: service.name,
       serviceUrl: kongServiceUrl,
-      globalPrefix: service.globalPrefix || service.name,
+      globalPrefix: resolveGlobalPrefix(service),
       groupedRoutes: service.parsed.groupedRoutes,
+      partnerApi,
       // Auth template mode: use auth service
       authServiceUrl: useAuthTemplate
         ? `\${KONG_SERVICE_HOST}:${authServicePort}`
@@ -293,66 +351,15 @@ export function generateKongConfig(_context?: OperationContext): void {
   logger.info('Step 4: Building framework config (kong.tsdevstack.yml)...');
   logger.newline();
 
-  // Framework file: services only (consumers should be added to kong.user.yml)
-  const tsdevstackConfig: KongTemplate = {
-    _format_version: '3.0',
-    _transform: true,
-    services: kongServices,
-  };
+  // Framework file: services and framework global plugins
+  const tsdevstackConfig = buildFrameworkKongConfig(kongServices);
 
   // Write kong.tsdevstack.yml (ALWAYS regenerated)
   const tsdevstackPath = path.join(rootDir, 'kong.tsdevstack.yml');
   writeYamlFile(tsdevstackPath, tsdevstackConfig);
   logger.success(
-    'Generated kong.tsdevstack.yml (framework routes + consumers)',
+    'Generated kong.tsdevstack.yml (framework routes + global plugins)',
   );
-  logger.newline();
-
-  // Step 6: Check/create kong.user.yml (ONLY if doesn't exist)
-  logger.info('Step 6: Checking kong.user.yml...');
-  const userConfigPath = path.join(rootDir, 'kong.user.yml');
-
-  let userConfig: KongTemplate;
-
-  if (!isFile(userConfigPath)) {
-    logger.info('   kong.user.yml not found - creating template...');
-
-    // User file: ONLY plugins (NO services, NO consumers)
-    // Consumers are now in kong.tsdevstack.yml (framework-managed)
-    userConfig = {
-      _format_version: '3.0',
-      _transform: true,
-      services: [],
-      plugins: getDefaultKongPlugins(useAuthTemplate),
-    };
-
-    // For non-auth templates, inject commented-out JWT claim examples
-    if (!useAuthTemplate) {
-      const yamlString = yaml.dump(userConfig, {
-        indent: 2,
-        lineWidth: -1,
-        noRefs: true,
-      });
-      const commentBlock = [
-        "          # Add your OIDC provider's JWT claims to prevent header spoofing:",
-        '          # - X-JWT-Claim-Sub',
-        '          # - X-JWT-Claim-Email',
-        '          # - X-JWT-Claim-Role',
-        '          # - X-JWT-Claim-Confirmed',
-      ].join('\n');
-      const withComments = yamlString.replace(
-        '          - X-Kong-Request-Id',
-        commentBlock + '\n          - X-Kong-Request-Id',
-      );
-      writeTextFile(userConfigPath, withComments);
-    } else {
-      writeYamlFile(userConfigPath, userConfig);
-    }
-    logger.success('Created kong.user.yml template');
-  } else {
-    logger.info('   kong.user.yml exists - using existing file');
-    userConfig = readYamlFile(userConfigPath) as KongTemplate;
-  }
   logger.newline();
 
   // Step 7: Merge tsdevstack + user configs
@@ -382,6 +389,9 @@ export function generateKongConfig(_context?: OperationContext): void {
   logger.success('Generated kong.yml (with actual secret values)');
   logger.newline();
 
+  // Step 10: Write the local Kong image build context
+  writeLocalKongBuildContext(rootDir);
+
   // Summary
   logger.complete('Kong configuration generated successfully!');
   logger.newline();
@@ -389,21 +399,25 @@ export function generateKongConfig(_context?: OperationContext): void {
   logger.info('   - kong.tsdevstack.yml (framework routes, committed)');
   logger.info('   - kong.user.yml (your customizations, committed)');
   logger.info('   - kong.yml (merged + resolved, gitignored)');
+  logger.info(
+    `   - ${KONG_LOCAL_BUILD_CONTEXT}/Dockerfile (Kong image, regenerated)`,
+  );
   logger.newline();
 
   logger.summary('Generated Kong services:');
   kongServices.forEach((service) => {
-    const route = service.routes[0];
-    logger.info(`   ${service.name}: ${route.paths?.join(', ') ?? ''}`);
+    logger.info(`   ${service.name}:`);
+    service.routes.forEach((route) => {
+      logger.info(
+        `      ${(route.methods ?? []).join(',')} ${route.paths?.join(', ') ?? ''}`,
+      );
+    });
   });
   logger.newline();
 
   logger.summary('Next steps:');
   logger.info('   1. Review kong.user.yml and customize as needed');
-  logger.info(
-    '   2. Add partner consumers to kong.user.yml (if using @PartnerApi)',
-  );
-  logger.info('   3. Run: npx tsdevstack sync');
+  logger.info('   2. Run: npx tsdevstack sync');
   logger.newline();
 
   logger.info(

@@ -1,0 +1,29 @@
+# Test fixture: declarative config for the Kong image Docker test.
+# The oidc service is never called; declaring it makes Kong refuse to start
+# unless the OIDC plugin is installed in the image.
+_format_version: '3.0'
+services:
+  - name: fixture
+    url: http://127.0.0.1:9
+    routes:
+      - name: fixture-route
+        paths: ['/fixture']
+    plugins:
+      - name: fixture-marker
+        config:
+          message: loaded
+  - name: oidc-protected
+    url: http://127.0.0.1:9
+    routes:
+      - name: oidc-route
+        paths: ['/protected']
+    plugins:
+      - name: oidc
+        config:
+          client_id: kong
+          client_secret: kong-secret
+          discovery: http://127.0.0.1:9/.well-known/openid-configuration
+          bearer_only: 'yes'
+          bearer_jwt_auth_enable: 'yes'
+          ssl_verify: 'no'
+          unauth_action: deny

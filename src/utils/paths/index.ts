@@ -24,3 +24,6 @@ export * from './cli-paths';
 
 // Credentials path helpers
 export * from './get-credentials-path';
+
+// CLI asset directories (templates shipped with the package)
+export * from './resolve-cli-asset-dir';

@@ -28,6 +28,21 @@ describe('generateKongService', () => {
     expect(env.KONG_DECLARATIVE_CONFIG).toBe('/kong/kong.yml');
   });
 
+  it('should override the image defaults (proxy 8080, Admin API off) for local development', () => {
+    const result = generateKongService('net');
+    const env = result.gateway.environment as Record<string, string>;
+
+    expect(env.KONG_PROXY_LISTEN).toBe('0.0.0.0:8000');
+    expect(env.KONG_ADMIN_LISTEN).toBe('0.0.0.0:8001');
+  });
+
+  it("should restore Kong's default request body limit (0, unlimited) instead of the baked cloud maxUploadSize", () => {
+    const result = generateKongService('net');
+    const env = result.gateway.environment as Record<string, string>;
+
+    expect(env.KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE).toBe('0');
+  });
+
   it('should expose proxy and admin ports', () => {
     const result = generateKongService('net');
 

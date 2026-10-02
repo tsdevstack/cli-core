@@ -12,7 +12,7 @@ import type { OpenApiDocument, RouteSecurityInfo, SecurityType } from './types';
  * @returns Array of route security information
  */
 export function extractRouteSecurityInfo(
-  document: OpenApiDocument
+  document: OpenApiDocument,
 ): RouteSecurityInfo[] {
   const routes: RouteSecurityInfo[] = [];
 
@@ -57,35 +57,35 @@ export function extractRouteSecurityInfo(
  * @returns Array of security types (can contain multiple for dual-access)
  */
 function determineSecurityTypes(
-  security: Array<Record<string, string[]>> | undefined
+  security: Array<Record<string, string[]>> | undefined,
 ): SecurityType[] {
   // No security requirement = public
   if (!security || security.length === 0) {
-    return ["public"];
+    return ['public'];
   }
 
   // Check what security schemes are required
-  const hasBearer = security.some((req) => "bearer" in req);
-  const hasApiKey = security.some((req) => "api-key" in req);
+  const hasBearer = security.some((req) => 'bearer' in req);
+  const hasApiKey = security.some((req) => 'api-key' in req);
 
   // Dual-access: Both JWT and Partner API
   // Creates two Kong routes:
   // - /service/v1/endpoint (JWT via OIDC plugin)
-  // - /api/service/v1/endpoint (API key via key-auth plugin)
+  // - /api/service/v1/endpoint (API key via the tsdevstack-api-key plugin)
   if (hasBearer && hasApiKey) {
-    return ["jwt", "partner"];
+    return ['jwt', 'partner'];
   }
 
   // Single security type
   if (hasBearer) {
-    return ["jwt"];
+    return ['jwt'];
   }
 
   if (hasApiKey) {
-    return ["partner"];
+    return ['partner'];
   }
 
   // Has security but neither bearer nor api-key (could be other schemes)
   // Treat as public for now
-  return ["public"];
+  return ['public'];
 }

@@ -1,6 +1,6 @@
 {
   "name": "@tsdevstack/cli",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "CLI tools and code generators for tsdevstack framework",
   "author": "tsdevstack",
   "license": "Apache-2.0",
@@ -83,7 +83,7 @@
     "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/service-usage": "^4.0.0",
     "@google-cloud/storage": "^7.18.0",
-    "@tsdevstack/cli-mcp": "^0.5.0",
+    "@tsdevstack/cli-mcp": "^0.6.0",
     "axios": "^1.16.1",
     "commander": "^15.0.0",
     "google-auth-library": "^10.5.0",
@@ -101,9 +101,11 @@
     "@tsdevstack/cli-cloud-secrets": "0.0.1",
     "@tsdevstack/cli-infra": "0.0.1",
     "@tsdevstack/infra-core": "*",
+    "@tsdevstack/nest-common": "^0.8.0",
     "@types/node": "^22.19.17",
     "eslint": "^10.7.0",
     "globals": "^17.5.0",
+    "ioredis": "^5.11.1",
     "prettier": "^3.6.2",
     "typescript": "^6.0.0",
     "typescript-eslint": "^8.63.0"

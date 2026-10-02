@@ -1,0 +1,44 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Offers Service (Kong end-to-end fixture)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/offers/v1/plans": {
+      "get": {
+        "operationId": "getPlans",
+        "security": [{ "bearer": [] }, { "api-key": [] }]
+      }
+    },
+    "/offers/v1/plans/featured": {
+      "get": {
+        "operationId": "getFeaturedPlan"
+      }
+    },
+    "/offers/v1/plans/{id}": {
+      "get": {
+        "operationId": "getPlanById",
+        "security": [{ "bearer": [] }, { "api-key": [] }]
+      }
+    },
+    "/offers/v1/user/assign-plan": {
+      "post": {
+        "operationId": "assignPlan",
+        "security": [{ "bearer": [] }]
+      }
+    },
+    "/offers/v2.1/user/active-plan": {
+      "get": {
+        "operationId": "getUserActivePlan",
+        "security": [{ "bearer": [] }]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": { "type": "http", "scheme": "bearer" },
+      "api-key": { "type": "apiKey", "in": "header", "name": "x-api-key" }
+    }
+  }
+}

@@ -18,6 +18,7 @@ rs.mock('../utils/openapi', { mock: true });
 rs.mock('../utils/kong', { mock: true });
 rs.mock('../utils/kong/generate-security-routes', { mock: true });
 rs.mock('../utils/kong/merge-kong-configs', { mock: true });
+rs.mock('../utils/kong/write-local-kong-build-context', { mock: true });
 
 describe('generateKongConfig - Integration Tests', () => {
   const mockLogger = {

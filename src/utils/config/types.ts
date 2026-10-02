@@ -19,6 +19,17 @@ export interface CloudConfig {
  */
 export type FrameworkTemplate = 'fullstack-auth' | 'auth' | null;
 
+/**
+ * `framework.apiKeys` in .tsdevstack/config.json
+ */
+export interface ApiKeysConfig {
+  /**
+   * Per-IP ceiling on partner routes: requests per minute per client IP,
+   * whatever the key (bounds key guessing). Default 600.
+   */
+  ipLimitPerMinute?: number;
+}
+
 export interface FrameworkConfig {
   project: {
     name: string;
@@ -31,6 +42,8 @@ export interface FrameworkConfig {
     packageScope?: string;
     /** Framework template for authentication setup. */
     template?: FrameworkTemplate;
+    /** Partner API key settings (all optional). */
+    apiKeys?: ApiKeysConfig;
   };
   cloud: CloudConfig;
   services: FrameworkService[];

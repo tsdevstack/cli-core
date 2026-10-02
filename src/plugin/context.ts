@@ -7,7 +7,12 @@
 
 // Core utilities
 import { logger } from '../utils/logger';
-import { loadFrameworkConfig, hasAuthTemplate } from '../utils/config';
+import {
+  loadFrameworkConfig,
+  hasAuthTemplate,
+  resolveGlobalPrefix,
+  resolveApiKeyIpLimit,
+} from '../utils/config';
 import {
   readJsonFile,
   writeJsonFile,
@@ -22,6 +27,7 @@ import {
   findProjectRoot,
   getConfigPath,
   getCredentialsPath,
+  resolveCliAssetDir,
 } from '../utils/paths';
 import { CliError, wrapCommand } from '../utils/errors';
 
@@ -78,8 +84,19 @@ import {
   generateSecurityBasedServices,
   resolveEnvVars,
   generateJwtOidcPlugin,
-  generateKeyAuthPlugin,
+  generateApiKeyPlugin,
+  generateIpCeilingPlugin,
+  buildApiKeyDefaultLimits,
+  warnStaticPartnerConsumers,
   processCorsOrigins,
+  generateKongDockerfile,
+  buildKongPluginList,
+  listKongPluginDirs,
+  stageKongPlugins,
+  writeKongBuildContext,
+  buildFrameworkKongConfig,
+  validateRequestTransformerHeaders,
+  validateStripIdentityPlugin,
 } from '../utils/kong';
 
 /**
@@ -100,6 +117,11 @@ export const pluginContext = {
   cleanupFolder,
   findProjectRoot,
   getConfigPath,
+  resolveCliAssetDir,
+
+  // Config utilities
+  resolveGlobalPrefix,
+  resolveApiKeyIpLimit,
 
   // Constants
   TSDEVSTACK_DIR,
@@ -152,8 +174,19 @@ export const pluginContext = {
   generateSecurityBasedServices,
   resolveEnvVars,
   generateJwtOidcPlugin,
-  generateKeyAuthPlugin,
+  generateApiKeyPlugin,
+  generateIpCeilingPlugin,
+  buildApiKeyDefaultLimits,
+  warnStaticPartnerConsumers,
   processCorsOrigins,
+  generateKongDockerfile,
+  buildKongPluginList,
+  listKongPluginDirs,
+  stageKongPlugins,
+  writeKongBuildContext,
+  buildFrameworkKongConfig,
+  validateRequestTransformerHeaders,
+  validateStripIdentityPlugin,
 } as const;
 
 export type PluginContext = typeof pluginContext;

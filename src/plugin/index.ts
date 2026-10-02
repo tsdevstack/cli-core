@@ -46,5 +46,11 @@ export type {
   KongUpstream,
   KongUpstreamTarget,
   ServiceRouteConfig,
+  PartnerApiSettings,
+  ApiKeyDefaultLimits,
   JsonValue,
+  GenerateKongDockerfileOptions,
+  BuildKongPluginListOptions,
+  StageKongPluginsOptions,
+  WriteKongBuildContextOptions,
 } from './types';

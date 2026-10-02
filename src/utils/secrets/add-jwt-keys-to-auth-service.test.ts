@@ -9,6 +9,7 @@ describe('addJwtKeysToAuthService', () => {
     'REFRESH_TOKEN_TTL',
     'CONFIRMATION_TOKEN_TTL',
     'APP_URL',
+    'ADMIN_EMAILS',
   ];
 
   describe('When auth template is enabled', () => {
@@ -30,6 +31,7 @@ describe('addJwtKeysToAuthService', () => {
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
         'APP_URL',
+        'ADMIN_EMAILS',
       ]);
     });
 
@@ -43,6 +45,7 @@ describe('addJwtKeysToAuthService', () => {
             'REFRESH_TOKEN_TTL',
             'CONFIRMATION_TOKEN_TTL',
             'APP_URL',
+            'ADMIN_EMAILS',
           ],
         },
       };
@@ -56,6 +59,7 @@ describe('addJwtKeysToAuthService', () => {
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
         'APP_URL',
+        'ADMIN_EMAILS',
       ]);
     });
 
@@ -76,6 +80,7 @@ describe('addJwtKeysToAuthService', () => {
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
         'APP_URL',
+        'ADMIN_EMAILS',
       ]);
     });
 
@@ -98,6 +103,7 @@ describe('addJwtKeysToAuthService', () => {
         'REFRESH_TOKEN_TTL',
         'CONFIRMATION_TOKEN_TTL',
         'APP_URL',
+        'ADMIN_EMAILS',
       ]);
     });
 

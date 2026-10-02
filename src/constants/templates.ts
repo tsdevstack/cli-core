@@ -31,3 +31,10 @@ export const NESTJS_AUTH_TEMPLATE_REPO =
  */
 export const NEXTJS_AUTH_TEMPLATE_REPO =
   'https://github.com/tsdevstack/nextjs-auth-frontend-template.git';
+
+/**
+ * Prefix of the version tags on the template repositories.
+ * The sync workflow tags each template repo with `v{cliVersion}`, and the CLI
+ * clones the tag matching its own version.
+ */
+export const TEMPLATE_VERSION_TAG_PREFIX = 'v';
