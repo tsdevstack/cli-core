@@ -13,7 +13,11 @@ import { logger } from '../utils/logger';
 import { loadFrameworkConfig, saveFrameworkConfig } from '../utils/config';
 import { validateBucketName } from '../utils/validation/validate-bucket-name';
 import { sync } from './sync';
-import { MINIO_CONSOLE_PORT } from '../constants';
+import {
+  LOCAL_STORAGE_ACCESS_KEY,
+  LOCAL_STORAGE_CONSOLE_PORT,
+  LOCAL_STORAGE_SECRET_KEY,
+} from '../constants';
 
 export interface AddBucketStorageOptions {
   name?: string;
@@ -87,9 +91,9 @@ export async function addBucketStorage(
   logger.success(`Bucket "${name}" added successfully`);
   logger.newline();
   logger.info('Local development:');
-  logger.info('  Run "npx tsdevstack sync" to start MinIO');
+  logger.info('  Run "npx tsdevstack sync" to start the local object storage');
   logger.info(
-    `  MinIO Console: http://localhost:${MINIO_CONSOLE_PORT} (minioadmin/minioadmin)`,
+    `  RustFS console: http://localhost:${LOCAL_STORAGE_CONSOLE_PORT} (${LOCAL_STORAGE_ACCESS_KEY}/${LOCAL_STORAGE_SECRET_KEY})`,
   );
   logger.newline();
 }

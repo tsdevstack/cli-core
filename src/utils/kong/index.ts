@@ -24,6 +24,7 @@ export { buildKongRedisConfig } from './build-kong-redis-config';
 export { buildApiKeyDefaultLimits } from './build-api-key-default-limits';
 export { warnStaticPartnerConsumers } from './warn-static-partner-consumers';
 export { generateStripIdentityPlugin } from './generate-strip-identity-plugin';
+export { generateClientIpPlugin } from './generate-client-ip-plugin';
 export { generateApiPrefixPlugin } from './generate-api-prefix-plugin';
 export { getFrameworkGlobalPlugins } from './get-framework-global-plugins';
 export { buildFrameworkKongConfig } from './build-framework-kong-config';

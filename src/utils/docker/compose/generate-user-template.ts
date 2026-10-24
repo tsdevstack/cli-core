@@ -7,12 +7,17 @@ import * as path from 'path';
 import { logger } from '../../logger';
 import { isFile } from '../../fs';
 
-export function generateUserComposeTemplate(rootDir: string, networkName: string): void {
+export function generateUserComposeTemplate(
+  rootDir: string,
+  networkName: string,
+): void {
   const userComposePath = path.join(rootDir, 'docker-compose.user.yml');
 
   // Don't overwrite if it already exists
   if (isFile(userComposePath)) {
-    logger.info('   ℹ️  docker-compose.user.yml already exists (preserving user services)');
+    logger.info(
+      '   ℹ️  docker-compose.user.yml already exists (preserving user services)',
+    );
     return;
   }
 
@@ -37,18 +42,17 @@ export function generateUserComposeTemplate(rootDir: string, networkName: string
 #     networks:
 #       - ${networkName}
 #
-#   minio:
-#     image: minio/minio
-#     command: server /data --console-address ":9001"
+#   rustfs:
+#     image: rustfs/rustfs:1.0.3
 #     environment:
 #       # ⚠️ For production secrets, add to .secrets.user.json and reference here:
-#       MINIO_ROOT_USER: \${MINIO_USER}
-#       MINIO_ROOT_PASSWORD: \${MINIO_PASSWORD}
+#       RUSTFS_ACCESS_KEY: \${RUSTFS_USER}
+#       RUSTFS_SECRET_KEY: \${RUSTFS_PASSWORD}
 #     ports:
 #       - "9000:9000"
 #       - "9001:9001"
 #     volumes:
-#       - ./data/minio:/data
+#       - ./data/rustfs:/data
 #     networks:
 #       - ${networkName}
 `;

@@ -5,6 +5,7 @@
  */
 
 import { rs } from '@rstest/core';
+import { AZURE_REQUIRED_RESOURCE_PROVIDERS } from '../constants/cloud-providers';
 
 /**
  * Create all mock functions for the plugin context
@@ -72,6 +73,7 @@ export function createMockContext() {
     SECRET_MAP_FILENAME: 'secret-map.json',
     executeCommand: rs.fn(() => ''),
     CLOUD_PROVIDERS: ['gcp', 'aws', 'azure'] as const,
+    AZURE_REQUIRED_RESOURCE_PROVIDERS,
     resolveCliAssetDir: rs.fn(),
     resolveGlobalPrefix: rs.fn(),
     resolveApiKeyIpLimit: rs.fn(() => 600),

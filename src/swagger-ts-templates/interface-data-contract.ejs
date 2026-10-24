@@ -2,20 +2,41 @@
 const { contract, utils } = it;
 const { formatDescription, require, _ } = utils;
 
-const getValidationDecorator = (field) => {
-  const type = field.value;
-  if (type === 'string' || type.includes('string')) return '@IsString()';
-  if (type === 'number' || type.includes('number')) return '@IsNumber()';
-  if (type === 'boolean' || type.includes('boolean')) return '@IsBoolean()';
-  if (field.isArray) return '@IsArray()';
-  return null;
+// OpenAPI type of a schema ("string", "array", ...). Undefined for $ref and
+// composed schemas. OpenAPI 3.1 may list "null" next to the type.
+const getSchemaType = (schema) => {
+  const type = schema && schema.type;
+  return Array.isArray(type) ? type.find((t) => t !== 'null') : type;
+};
+
+const EACH_ITEM_VALIDATORS = {
+  string: '@IsString({ each: true })',
+  number: '@IsNumber({}, { each: true })',
+  integer: '@IsNumber({}, { each: true })',
+  boolean: '@IsBoolean({ each: true })',
+};
+
+// Validators from the field's OpenAPI schema (not its TypeScript type: a
+// `string[]` or `Record<string, string>` must not get @IsString()). Arrays
+// validate each item. Objects, $ref, composed types and binary strings
+// (files) get none.
+const getValidationDecorators = (field) => {
+  const type = getSchemaType(field);
+  if (type === 'array') {
+    const eachItem = EACH_ITEM_VALIDATORS[getSchemaType(field.items)];
+    return eachItem ? ['@IsArray()', eachItem] : ['@IsArray()'];
+  }
+  if (type === 'string') return field.format === 'binary' ? [] : ['@IsString()'];
+  if (type === 'number' || type === 'integer') return ['@IsNumber()'];
+  if (type === 'boolean') return ['@IsBoolean()'];
+  return [];
 };
 
 // Explicit swagger type. Without it, consumers that rebuild an OpenAPI spec
 // by reflecting these precompiled classes (e.g. a BFF re-exposing types)
 // lose the type on nullable fields: `number | null` reflects as Object.
 const getSwaggerType = (field) => {
-  if (field.isArray) return null;
+  if (getSchemaType(field) === 'array') return null;
   const base = field.value.replace(' | null', '');
   if (base === 'string') return "type: 'string'";
   if (base === 'number') return "type: 'number'";
@@ -36,10 +57,14 @@ const getSwaggerType = (field) => {
 %>
 export class <%~ contract.name %> {
 <% for (const field of contract.$content) { %>
+<% if (field.name === undefined) { %>
+  <%~ field.field %>;
+
+<% continue; } %>
 <%~ includeFile('./object-field-jsdoc.ejs', { ...it, field }) %>
   <% if (field.isRequired) { %>@IsDefined()
   <% } else { %>@IsOptional()
-  <% } %><% const validator = getValidationDecorator(field); %><% if (validator) { %><%~ validator %>
+  <% } %><% for (const validator of getValidationDecorators(field)) { %><%~ validator %>
   <% } %><% const swaggerType = getSwaggerType(field); %>@ApiProperty({ required: <%~ field.isRequired ? 'true' : 'false' %><%~ field.isNullable ? ', nullable: true' : '' %><%~ swaggerType ? `, ${swaggerType}` : '' %> })
   <%~ field.name %><%~ field.isRequired ? '' : '?' %>: <%~ field.value %><%~ (field.isNullable && !field.value.includes('| null')) ? ' | null' : ''%>;
 

@@ -83,6 +83,7 @@ describe('generateFrameworkSecretsFile', () => {
       expect(result.secrets.NODE_ENV).toBe('development');
       expect(result.secrets.SECRETS_PROVIDER).toBe('local');
       expect(result.secrets.KONG_TRUST_TOKEN).toBe('mocked-hex-secret');
+      expect(result.secrets.KONG_FRONTEND_TOKEN).toBe('mocked-hex-secret');
     });
 
     it('should include auth secrets when auth template is enabled', () => {
@@ -101,6 +102,29 @@ describe('generateFrameworkSecretsFile', () => {
   });
 
   describe('Framework secrets - with existing secrets', () => {
+    it('should preserve an existing KONG_FRONTEND_TOKEN', () => {
+      const config = createMockFrameworkConfig();
+
+      const result = generateFrameworkSecretsFile(config, {
+        secrets: { KONG_FRONTEND_TOKEN: 'existing-frontend-token' },
+      });
+
+      expect(result.secrets.KONG_FRONTEND_TOKEN).toBe(
+        'existing-frontend-token',
+      );
+    });
+
+    it('should generate KONG_FRONTEND_TOKEN for a project that predates it', () => {
+      const config = createMockFrameworkConfig();
+
+      const result = generateFrameworkSecretsFile(config, {
+        secrets: { KONG_TRUST_TOKEN: 'existing-trust-token' },
+      });
+
+      expect(result.secrets.KONG_TRUST_TOKEN).toBe('existing-trust-token');
+      expect(result.secrets.KONG_FRONTEND_TOKEN).toBe('mocked-hex-secret');
+    });
+
     it('should preserve existing REFRESH_TOKEN_SECRET when auth template is enabled', () => {
       const config = createMockFrameworkConfig({
         framework: { template: 'auth' },
@@ -285,7 +309,7 @@ describe('generateFrameworkSecretsFile', () => {
       const web = result['web'] as Record<string, unknown>;
       expect(web).toEqual({
         PORT: '3000',
-        secrets: ['KONG_INTERNAL_URL'],
+        secrets: ['KONG_INTERNAL_URL', 'KONG_FRONTEND_TOKEN'],
       });
     });
 

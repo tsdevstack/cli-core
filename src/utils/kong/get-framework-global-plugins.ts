@@ -4,6 +4,7 @@
 
 import type { KongPlugin } from './types';
 import { generateStripIdentityPlugin } from './generate-strip-identity-plugin';
+import { generateClientIpPlugin } from './generate-client-ip-plugin';
 
 /**
  * Returns the global plugins tsdevstack always generates into
@@ -13,5 +14,5 @@ import { generateStripIdentityPlugin } from './generate-strip-identity-plugin';
  * @returns Framework global plugins
  */
 export function getFrameworkGlobalPlugins(): KongPlugin[] {
-  return [generateStripIdentityPlugin()];
+  return [generateStripIdentityPlugin(), generateClientIpPlugin()];
 }

@@ -3,6 +3,7 @@ import { describe, it, expect, rs, beforeEach, afterEach } from '@rstest/core';
 rs.mock('../logger', () => ({
   logger: {
     error: rs.fn(),
+    warn: rs.fn(),
     debug: rs.fn(),
   },
 }));
@@ -112,6 +113,50 @@ describe('wrapCommand', () => {
       await wrapped();
 
       expect(logger.error).toHaveBeenCalledWith('try this');
+    });
+  });
+
+  describe('Closed prompt handling', () => {
+    const originalIsTTY = process.stdin.isTTY;
+
+    const promptClosedError = (): Error => {
+      const error = new Error('User force closed the prompt with 0 null');
+      error.name = 'ExitPromptError';
+      return error;
+    };
+
+    afterEach(() => {
+      process.stdin.isTTY = originalIsTTY;
+    });
+
+    it('should explain the missing terminal when stdin is not interactive', async () => {
+      process.stdin.isTTY = false;
+      const fn = rs
+        .fn<() => Promise<void>>()
+        .mockRejectedValue(promptClosedError());
+
+      await wrapCommand(fn)();
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'This command asked a question, but no terminal is attached to answer it.',
+      );
+      expect(logger.error).not.toHaveBeenCalledWith(
+        'Unexpected error occurred:',
+      );
+      expect(process.exit).toHaveBeenCalledWith(1);
+    });
+
+    it('should report a cancel (Ctrl+C) in a terminal', async () => {
+      process.stdin.isTTY = true;
+      const fn = rs
+        .fn<() => Promise<void>>()
+        .mockRejectedValue(promptClosedError());
+
+      await wrapCommand(fn)();
+
+      expect(logger.warn).toHaveBeenCalledWith('Cancelled');
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalledWith(130);
     });
   });
 });

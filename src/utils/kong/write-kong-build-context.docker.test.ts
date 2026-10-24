@@ -12,23 +12,25 @@
  * are removed in afterAll, together with the images and temp directories.
  * Skipped with a message when Docker is not available.
  *
- * Every container and image is named `tsds-kong-image-test-<random>-*`. If a
- * run is killed before afterAll, clean up with:
+ * Every container and image is named `tsds-kong-image-test-<pid>-<random>-*`.
+ * A run killed before afterAll leaves them behind; the next run removes them
+ * at start (removeStaleDockerResources). To clean up by hand:
  *   docker ps -a --filter name=tsds-kong-image-test- -q | xargs docker rm -f
  *   docker images --filter reference='tsds-kong-image-test-*' -q | xargs docker rmi -f
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@rstest/core';
 import { spawnSync } from 'child_process';
-import { randomBytes } from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { writeKongBuildContext } from './write-kong-build-context';
 import {
+  buildDockerTestPrefix,
   getContainerHostPort,
   isDockerAvailable,
+  removeStaleDockerResources,
   runDocker,
   startAttachedContainer,
   stopAttachedContainer,
@@ -55,8 +57,8 @@ if (!dockerAvailable) {
   );
 }
 
-const runId = randomBytes(4).toString('hex');
-const resourcePrefix = `tsds-kong-image-test-${runId}`;
+const RESOURCE_BASE = 'tsds-kong-image-test';
+const resourcePrefix = buildDockerTestPrefix(RESOURCE_BASE);
 const localImage = `${resourcePrefix}-local`;
 const cloudImage = `${resourcePrefix}-cloud`;
 const localContainer = `${resourcePrefix}-local`;
@@ -69,6 +71,7 @@ describe.skipIf(!dockerAvailable)('Kong image (Docker)', () => {
   let kongPlugins: string[];
 
   beforeAll(() => {
+    removeStaleDockerResources(RESOURCE_BASE);
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kong-image-test-'));
     const projectRoot = path.join(tempDir, 'project');
     fs.cpSync(

@@ -58,6 +58,26 @@ describe('printInfrastructureUrls', () => {
     expect(infoCalls).toContainEqual(expect.stringContaining('Kong Admin'));
   });
 
+  it('should log the storage console when buckets are configured', () => {
+    printInfrastructureUrls({ storage: true });
+
+    const infoCalls = rs.mocked(logger.info).mock.calls.map((c) => c[0]);
+
+    expect(infoCalls).toContainEqual(
+      expect.stringContaining(
+        'RustFS console: http://localhost:9001 (rustfsadmin / rustfsadmin)',
+      ),
+    );
+  });
+
+  it('should not log the storage console without buckets', () => {
+    printInfrastructureUrls();
+
+    const infoCalls = rs.mocked(logger.info).mock.calls.map((c) => c[0]);
+
+    expect(infoCalls).not.toContainEqual(expect.stringContaining('RustFS'));
+  });
+
   it('should log 7 info lines for all services', () => {
     printInfrastructureUrls();
 

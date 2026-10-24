@@ -25,9 +25,7 @@ export interface DockerComposeBuild {
 
 export interface DockerComposeDependsOnCondition {
   condition:
-    | 'service_started'
-    | 'service_healthy'
-    | 'service_completed_successfully';
+    'service_started' | 'service_healthy' | 'service_completed_successfully';
 }
 
 export interface DockerComposeService {
@@ -36,6 +34,7 @@ export interface DockerComposeService {
   container_name?: string;
   restart?: string;
   platform?: string;
+  user?: string;
   environment?: Record<string, string> | string[];
   volumes?: (string | DockerComposeVolume)[];
   ports?: string[];

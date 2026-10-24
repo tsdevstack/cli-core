@@ -25,7 +25,11 @@ export default defineConfig({
         externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
         copy: [
           { from: './src/templates', to: './templates' },
-          { from: './src/swagger-ts-templates', to: './swagger-ts-templates' },
+          {
+            from: './src/swagger-ts-templates',
+            to: './swagger-ts-templates',
+            globOptions: { ignore: ['**/*.test.ts'] },
+          },
         ],
       },
     },

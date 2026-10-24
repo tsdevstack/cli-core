@@ -15,7 +15,18 @@ describe('buildFrameworkKongConfig', () => {
         _format_version: '3.0',
         _transform: true,
         services: [service],
-        plugins: [{ name: 'tsdevstack-strip-identity', config: {} }],
+        plugins: [
+          { name: 'tsdevstack-strip-identity', config: {} },
+          {
+            name: 'tsdevstack-client-ip',
+            config: {
+              frontend_token: '${KONG_FRONTEND_TOKEN}',
+              client_ip_header: 'X-Tsdevstack-Client-IP',
+              token_header: 'X-Tsdevstack-Frontend-Token',
+              real_ip_header: 'X-Tsdevstack-Real-IP',
+            },
+          },
+        ],
       });
     });
   });
@@ -25,7 +36,7 @@ describe('buildFrameworkKongConfig', () => {
       const config = buildFrameworkKongConfig([]);
 
       expect(config.services).toEqual([]);
-      expect(config.plugins).toHaveLength(1);
+      expect(config.plugins).toHaveLength(2);
     });
   });
 });

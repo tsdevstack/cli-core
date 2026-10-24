@@ -1,26 +1,35 @@
 /**
  * Storage Constants
  *
- * MinIO defaults for local development and bucket name limits.
+ * Local object storage (RustFS, S3-compatible) defaults and bucket name limits.
  */
 
-/** MinIO S3-compatible endpoint for local development */
+/** S3 endpoint of the local object storage */
 export const LOCAL_STORAGE_ENDPOINT = 'http://localhost:9000';
 
-/** MinIO default root user */
-export const LOCAL_STORAGE_ACCESS_KEY = 'minioadmin';
+/** Root access key of the local object storage */
+export const LOCAL_STORAGE_ACCESS_KEY = 'rustfsadmin';
 
-/** MinIO default root password */
-export const LOCAL_STORAGE_SECRET_KEY = 'minioadmin';
+/** Root secret key of the local object storage */
+export const LOCAL_STORAGE_SECRET_KEY = 'rustfsadmin';
 
-/** MinIO requires path-style access (not virtual-hosted) */
+/** The local server needs path-style access (not virtual-hosted) */
 export const LOCAL_STORAGE_FORCE_PATH_STYLE = 'true';
 
-/** MinIO web console port */
-export const MINIO_CONSOLE_PORT = '9001';
+/** Web console port of the local object storage */
+export const LOCAL_STORAGE_CONSOLE_PORT = '9001';
 
-/** MinIO S3 API port */
-export const MINIO_API_PORT = '9000';
+/** S3 API port of the local object storage */
+export const LOCAL_STORAGE_API_PORT = '9000';
+
+/**
+ * Image of the local object storage server. RustFS is Apache-2.0 and
+ * S3-compatible; MinIO's images left Docker Hub in September 2026.
+ */
+export const LOCAL_STORAGE_IMAGE = 'rustfs/rustfs:1.0.3';
+
+/** Image of the one-shot container that creates the buckets (s5cmd) */
+export const LOCAL_STORAGE_INIT_IMAGE = 'peakcom/s5cmd:v2.3.0';
 
 /** Maximum length for a bucket logical name */
 export const BUCKET_NAME_MAX_LENGTH = 30;
@@ -44,5 +53,6 @@ export const BUCKET_RESERVED_NAMES = [
   'mysql',
   'mongodb',
   'minio',
+  'rustfs',
   'storage',
 ] as const;

@@ -3,16 +3,24 @@ import { generateKongService } from './kong-service';
 
 describe('generateKongService', () => {
   it('should generate kong gateway service config', () => {
-    const result = generateKongService('test-network');
+    const result = generateKongService('test-network', 'shop');
 
     expect(result).toHaveProperty('gateway');
     const service = result.gateway;
-    expect(service.image).toBe('tsdevstack-kong:latest');
     expect(service.networks).toEqual(['test-network']);
   });
 
+  it('should name the image after the project', () => {
+    expect(generateKongService('net', 'shop').gateway.image).toBe(
+      'shop-kong:latest',
+    );
+    expect(generateKongService('net', 'blog').gateway.image).toBe(
+      'blog-kong:latest',
+    );
+  });
+
   it('should use local build context', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
 
     expect(result.gateway.build).toEqual({
       context: './infrastructure/kong',
@@ -21,7 +29,7 @@ describe('generateKongService', () => {
   });
 
   it('should configure Kong in DB-less mode', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
     const env = result.gateway.environment as Record<string, string>;
 
     expect(env.KONG_DATABASE).toBe('off');
@@ -29,7 +37,7 @@ describe('generateKongService', () => {
   });
 
   it('should override the image defaults (proxy 8080, Admin API off) for local development', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
     const env = result.gateway.environment as Record<string, string>;
 
     expect(env.KONG_PROXY_LISTEN).toBe('0.0.0.0:8000');
@@ -37,32 +45,32 @@ describe('generateKongService', () => {
   });
 
   it("should restore Kong's default request body limit (0, unlimited) instead of the baked cloud maxUploadSize", () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
     const env = result.gateway.environment as Record<string, string>;
 
     expect(env.KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE).toBe('0');
   });
 
   it('should expose proxy and admin ports', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
 
     expect(result.gateway.ports).toEqual(['8000:8000', '8001:8001']);
   });
 
   it('should mount kong.yml as read-only volume', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
 
     expect(result.gateway.volumes).toEqual(['./kong.yml:/kong/kong.yml:ro']);
   });
 
   it('should depend on redis', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
 
     expect(result.gateway.depends_on).toEqual(['redis']);
   });
 
   it('should include healthcheck', () => {
-    const result = generateKongService('net');
+    const result = generateKongService('net', 'shop');
 
     expect(result.gateway.healthcheck).toBeDefined();
     expect(result.gateway.healthcheck!.test).toEqual(['CMD', 'kong', 'health']);

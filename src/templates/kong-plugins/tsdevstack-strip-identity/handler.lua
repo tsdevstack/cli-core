@@ -30,6 +30,7 @@ local HEADERS = {
   "X-Api-Key-Id",
   "X-Api-Key-Consumer",
   "X-Kong-Trust",
+  "X-Tsdevstack-Real-IP",
 }
 
 -- Lowercase names with "-" (the lookup form of HEADERS)

@@ -11,9 +11,13 @@ import { KONG_LOCAL_CLIENT_MAX_BODY_SIZE } from '../../../constants';
  * Local development overrides them here: proxy 8000, Admin API 8001, the
  * mounted kong.yml, and Kong's default request body limit (unlimited)
  * instead of the cloud maxUploadSize baked into the image.
+ *
+ * The image is named after the project, so tsdevstack projects on one
+ * machine never build into (or remove) each other's Kong image.
  */
 export function generateKongService(
   networkName: string,
+  projectName: string,
 ): DockerComposeServices {
   return {
     gateway: {
@@ -21,7 +25,7 @@ export function generateKongService(
         context: './infrastructure/kong',
         dockerfile: 'Dockerfile',
       },
-      image: 'tsdevstack-kong:latest',
+      image: `${projectName}-kong:latest`,
       environment: {
         KONG_DATABASE: 'off',
         KONG_DECLARATIVE_CONFIG: '/kong/kong.yml',

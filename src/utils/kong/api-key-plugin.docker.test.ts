@@ -18,8 +18,9 @@
  * the network and the temp directory. Skipped with a message when Docker is
  * not available.
  *
- * Every resource is named `tsds-apikey-e2e-<random>-*`. If a run is killed
- * before afterAll, clean up with:
+ * Every resource is named `tsds-apikey-e2e-<pid>-<random>-*`. A run killed
+ * before afterAll leaves them behind; the next run removes them at start
+ * (removeStaleDockerResources). To clean up by hand:
  *   docker ps -a --filter name=tsds-apikey-e2e- -q | xargs docker rm -f
  *   docker network ls --filter name=tsds-apikey-e2e- -q | xargs docker network rm
  *   docker images --filter reference='tsds-apikey-e2e-*' -q | xargs docker rmi -f
@@ -47,8 +48,10 @@ import { processCorsOrigins } from './process-cors-origins';
 import { writeKongBuildContext } from './write-kong-build-context';
 import type { KongPlugin, KongTemplate } from './types';
 import {
+  buildDockerTestPrefix,
   getContainerHostPort,
   isDockerAvailable,
+  removeStaleDockerResources,
   runDocker,
   sleep,
   startAttachedContainer,
@@ -105,8 +108,8 @@ if (!dockerAvailable) {
   );
 }
 
-const runId = randomBytes(4).toString('hex');
-const prefix = `tsds-apikey-e2e-${runId}`;
+const RESOURCE_BASE = 'tsds-apikey-e2e';
+const prefix = buildDockerTestPrefix(RESOURCE_BASE);
 const network = `${prefix}-net`;
 const image = `${prefix}-kong`;
 const echoName = `${prefix}-echo`;
@@ -353,6 +356,7 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
 
   beforeAll(
     async () => {
+      removeStaleDockerResources(RESOURCE_BASE);
       tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apikey-e2e-test-'));
       kongConfig = generateKongConfig();
 

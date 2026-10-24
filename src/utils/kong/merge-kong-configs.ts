@@ -6,7 +6,8 @@ import { CliError } from '../errors';
  *
  * Simple concat strategy:
  * - Framework file (kong.tsdevstack.yml): services generated from OpenAPI,
- *   consumers, and the framework global plugins (tsdevstack-strip-identity)
+ *   consumers, and the framework global plugins (tsdevstack-strip-identity,
+ *   tsdevstack-client-ip)
  * - User file (kong.user.yml): global plugins, optionally custom services
  *   and consumers
  *

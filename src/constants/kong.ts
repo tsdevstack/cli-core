@@ -190,6 +190,44 @@ export const KONG_GENERATED_FILE_HEADER =
 export const KONG_STRIP_IDENTITY_PLUGIN_NAME = 'tsdevstack-strip-identity';
 
 /**
+ * Framework plugin that lets the frontend server name the visitor it calls
+ * Kong for, so the per-client rate limit counts that visitor instead of the
+ * frontend server (global plugin in kong.tsdevstack.yml). Source:
+ * templates/kong-plugins/tsdevstack-client-ip.
+ */
+export const KONG_CLIENT_IP_PLUGIN_NAME = 'tsdevstack-client-ip';
+
+/**
+ * Header with the visitor's address, sent by the frontend server on its
+ * calls to Kong (read by tsdevstack-client-ip, never passed to backends).
+ * The Next.js frontend template sends the same name.
+ */
+export const KONG_CLIENT_IP_HEADER = 'X-Tsdevstack-Client-IP';
+
+/**
+ * Header with the frontend token (secret KONG_FRONTEND_TOKEN), proving a
+ * call comes from the frontend server (read by tsdevstack-client-ip, never
+ * passed to backends). The Next.js frontend template sends the same name.
+ */
+export const KONG_FRONTEND_TOKEN_HEADER = 'X-Tsdevstack-Frontend-Token';
+
+/**
+ * Framework secret shared by Kong and the Next.js frontends: the value the
+ * frontend sends in KONG_FRONTEND_TOKEN_HEADER.
+ */
+export const KONG_FRONTEND_TOKEN_SECRET = 'KONG_FRONTEND_TOKEN';
+
+/**
+ * Header with the client address Kong forwards to backends for their per-IP
+ * limits: the visitor a trusted frontend named, otherwise the address Kong
+ * resolved. Set by tsdevstack-client-ip on every request; backends cannot use
+ * X-Real-IP for this, because Kong always sets that one to the frontend
+ * server's address (nginx `proxy_set_header X-Real-IP $remote_addr`).
+ * A client-sent value is removed by tsdevstack-strip-identity.
+ */
+export const KONG_UPSTREAM_CLIENT_IP_HEADER = 'X-Tsdevstack-Real-IP';
+
+/**
  * Framework plugin on each partner service that removes the public partner
  * prefix from the upstream path. Source: templates/kong-plugins/tsdevstack-api-prefix.
  */
@@ -217,8 +255,9 @@ export const KONG_REQUEST_ID_HEADER = 'X-Kong-Request-Id';
  * tsdevstack-strip-identity before any auth plugin runs. Set by the OIDC
  * plugin (X-Userinfo, X-ID-Token, X-Access-Token), Kong's auth plugins
  * (X-Consumer-*, X-Credential-Identifier, X-Anonymous-Consumer,
- * X-Authenticated-*), the API key plugin (X-Api-Key-*) and the
- * request-transformer (X-Kong-Trust).
+ * X-Authenticated-*), the API key plugin (X-Api-Key-*), the
+ * request-transformer (X-Kong-Trust) and tsdevstack-client-ip
+ * (X-Tsdevstack-Real-IP).
  *
  * Must match HEADERS in templates/kong-plugins/tsdevstack-strip-identity/handler.lua
  * (a test compares them).
@@ -239,6 +278,7 @@ export const KONG_CLIENT_IDENTITY_HEADERS = [
   'X-Api-Key-Id',
   'X-Api-Key-Consumer',
   KONG_TRUST_HEADER,
+  KONG_UPSTREAM_CLIENT_IP_HEADER,
 ] as const;
 
 /**

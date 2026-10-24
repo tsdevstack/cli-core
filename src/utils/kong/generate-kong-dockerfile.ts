@@ -98,6 +98,12 @@ ENV KONG_PROXY_ACCESS_LOG=/dev/stdout
 ENV KONG_PROXY_ERROR_LOG=/dev/stderr
 ENV KONG_LOG_LEVEL=notice
 
+# TLS to Redis: verify the server certificate against the system CA bundle.
+# Kong's default depth (1) rejects chains with two intermediates, such as a
+# newer root cross-signed by an older one; 3 allows those plus one more.
+ENV KONG_LUA_SSL_TRUSTED_CERTIFICATE=system
+ENV KONG_LUA_SSL_VERIFY_DEPTH=3
+
 # Memory configuration (production tuning)
 ENV KONG_MEM_CACHE_SIZE=256m
 ENV KONG_LMDB_MAP_SIZE=2048m

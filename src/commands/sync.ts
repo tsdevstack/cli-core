@@ -149,6 +149,8 @@ export function sync(context?: OperationContext): void {
     `Prisma migrations run for ${servicesWithPrisma.length} service(s)`,
   );
   logger.newline();
-  printInfrastructureUrls();
+  printInfrastructureUrls({
+    storage: (config.storage?.buckets?.length ?? 0) > 0,
+  });
   logger.newline();
 }

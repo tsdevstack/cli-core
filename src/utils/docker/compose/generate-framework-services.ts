@@ -14,7 +14,7 @@ import {
   generatePrometheusService,
   generateGrafanaService,
   generateJaegerService,
-  generateMinioService,
+  generateRustfsService,
 } from '../generators';
 
 export function generateFrameworkServices(
@@ -28,7 +28,10 @@ export function generateFrameworkServices(
 
   // 1. Kong Gateway
   logger.info('   ✓ Kong Gateway');
-  Object.assign(services, generateKongService(networkName));
+  Object.assign(
+    services,
+    generateKongService(networkName, config.project.name),
+  );
 
   // 2. Redis + Redis Commander
   logger.info('   ✓ Redis');
@@ -83,10 +86,10 @@ export function generateFrameworkServices(
   logger.info('   ✓ Jaeger (http://localhost:16686)');
   Object.assign(services, generateJaegerService(networkName));
 
-  // 6. MinIO (S3-compatible storage) — only when buckets configured
+  // 6. RustFS (S3-compatible storage), only when buckets are configured
   if (config.storage?.buckets && config.storage.buckets.length > 0) {
-    logger.info('   ✓ MinIO (S3-compatible storage)');
-    Object.assign(services, generateMinioService(config, networkName));
+    logger.info('   ✓ RustFS (S3-compatible storage)');
+    Object.assign(services, generateRustfsService(config, networkName));
   }
 
   return services;

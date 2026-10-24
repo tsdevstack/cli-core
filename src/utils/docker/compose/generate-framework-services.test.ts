@@ -62,6 +62,12 @@ describe('generateFrameworkServices', () => {
       expect(result.redis.networks).toEqual(['test-project-network']);
     });
 
+    it('should name the Kong image after the project', () => {
+      const result = generateFrameworkServices(makeConfig(), {});
+
+      expect(result.gateway.image).toBe('test-project-kong:latest');
+    });
+
     it('should generate database services for services with hasDatabase', () => {
       const config = makeConfig([
         {

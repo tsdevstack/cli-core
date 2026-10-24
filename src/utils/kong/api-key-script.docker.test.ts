@@ -15,8 +15,9 @@
  * The handler's own logic (marker lookup, NOSCRIPT fallback, headers, error
  * responses) is covered by api-key-plugin.docker.test.ts.
  *
- * Every container is named `tsds-apikey-script-<random>-*`. If a run is
- * killed before afterAll, clean up with:
+ * Every container is named `tsds-apikey-script-<pid>-<random>-*`. A run
+ * killed before afterAll leaves them behind; the next run removes them at
+ * start (removeStaleDockerResources). To clean up by hand:
  *   docker ps -a --filter name=tsds-apikey-script- -q | xargs docker rm -f
  */
 
@@ -34,7 +35,9 @@ import type {
   ApiKeyWindow,
 } from '@tsdevstack/nest-common';
 import {
+  buildDockerTestPrefix,
   isDockerAvailable,
+  removeStaleDockerResources,
   runDocker,
   sleep,
   startRedisContainer,
@@ -89,8 +92,8 @@ if (!dockerAvailable) {
   );
 }
 
-const runId = randomBytes(4).toString('hex');
-const prefix = `tsds-apikey-script-${runId}`;
+const RESOURCE_BASE = 'tsds-apikey-script';
+const prefix = buildDockerTestPrefix(RESOURCE_BASE);
 const source = readApiKeyScriptSource();
 const sourceSha1 = createHash('sha1').update(source, 'utf8').digest('hex');
 
@@ -172,6 +175,10 @@ function record(overrides: Partial<ApiKeyRecord> = {}): ApiKeyRecord {
 }
 
 describe.skipIf(!dockerAvailable)('tsdevstack-api-key script (Docker)', () => {
+  beforeAll(() => {
+    removeStaleDockerResources(RESOURCE_BASE);
+  });
+
   describe('plugin Lua against the contract (Kong image)', () => {
     /** Runs a Lua chunk with `resty` in the Kong image, plugin mounted */
     function resty(code: string): string {

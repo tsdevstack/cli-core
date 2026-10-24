@@ -6,6 +6,7 @@
 
 import { logger } from '../logger';
 import { CliError } from './cli-error';
+import { CANCELLED_EXIT_CODE, PROMPT_CLOSED_ERROR_NAME } from '../../constants';
 
 /**
  * Wrap a command function with error handling
@@ -45,6 +46,23 @@ export function wrapCommand(
     } catch (error) {
       if (error instanceof CliError) {
         error.logAndExit(1);
+      } else if (
+        error instanceof Error &&
+        error.name === PROMPT_CLOSED_ERROR_NAME
+      ) {
+        // Ctrl+C in a terminal, or a closed stdin with nothing to answer
+        if (process.stdin.isTTY) {
+          logger.warn('Cancelled');
+          process.exit(CANCELLED_EXIT_CODE);
+        } else {
+          logger.error(
+            'This command asked a question, but no terminal is attached to answer it.',
+          );
+          logger.error(
+            'Run it in a terminal, or pass the answers as options (see --help).',
+          );
+          process.exit(1);
+        }
       } else {
         logger.error('Unexpected error occurred:');
         logger.error(error instanceof Error ? error.message : String(error));

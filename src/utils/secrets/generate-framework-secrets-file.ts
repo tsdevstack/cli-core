@@ -96,6 +96,13 @@ export function generateFrameworkSecretsFile(
       (typeof existingKongToken === 'string' && existingKongToken) ||
       generateHexSecret(32);
 
+    // Preserve or generate KONG_FRONTEND_TOKEN (the Next.js server's proof
+    // to Kong that a visitor address it sends is genuine)
+    const existingFrontendToken = existing.KONG_FRONTEND_TOKEN;
+    frameworkSecrets.KONG_FRONTEND_TOKEN =
+      (typeof existingFrontendToken === 'string' && existingFrontendToken) ||
+      generateHexSecret(32);
+
     // Step 3: Preserve or generate service API keys (always, for all backend services)
     for (const service of config.services) {
       const isFrontend =
@@ -128,8 +135,9 @@ export function generateFrameworkSecretsFile(
       frameworkSecrets.BCRYPT_ROUNDS = '12';
     }
 
-    // Step 2: Generate KONG_TRUST_TOKEN (always)
+    // Step 2: Generate KONG_TRUST_TOKEN and KONG_FRONTEND_TOKEN (always)
     frameworkSecrets.KONG_TRUST_TOKEN = generateHexSecret(32);
+    frameworkSecrets.KONG_FRONTEND_TOKEN = generateHexSecret(32);
 
     // Step 3: Generate service API keys (for all backend services)
     for (const service of config.services) {
@@ -233,7 +241,7 @@ export function generateFrameworkSecretsFile(
   const storageBucketKeys: string[] = [];
 
   if (hasBuckets) {
-    // MinIO connection secrets (local-dev only — NOT added to service secrets arrays)
+    // Local object storage (RustFS) connection secrets: local-dev only, not added to service secrets arrays
     file.secrets = {
       ...file.secrets,
       STORAGE_ENDPOINT: LOCAL_STORAGE_ENDPOINT,
@@ -271,10 +279,11 @@ export function generateFrameworkSecretsFile(
     let serviceSecretsArray: string[];
 
     if (isFrontend) {
-      // Next.js services get KONG_INTERNAL_URL from framework (server-side API calls)
+      // Next.js services get KONG_INTERNAL_URL (server-side API calls) and
+      // KONG_FRONTEND_TOKEN (sent with the visitor's address on those calls).
       // SPAs don't (they only call through public API_URL)
       if (service.type === 'nextjs') {
-        serviceSecretsArray = ['KONG_INTERNAL_URL'];
+        serviceSecretsArray = ['KONG_INTERNAL_URL', 'KONG_FRONTEND_TOKEN'];
       } else {
         serviceSecretsArray = [];
       }

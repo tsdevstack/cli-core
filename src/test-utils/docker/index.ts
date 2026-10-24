@@ -16,3 +16,6 @@ export {
   type StartRedisContainerOptions,
   type StartedRedisContainer,
 } from './start-redis-container';
+export { buildDockerTestPrefix } from './build-docker-test-prefix';
+export { isStaleDockerTestResource } from './is-stale-docker-test-resource';
+export { removeStaleDockerResources } from './remove-stale-docker-resources';

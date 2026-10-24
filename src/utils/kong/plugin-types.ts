@@ -88,6 +88,20 @@ export interface StripIdentityPluginConfig {
 }
 
 /**
+ * tsdevstack-client-ip plugin configuration
+ */
+export interface ClientIpPluginConfig {
+  name: 'tsdevstack-client-ip';
+  config: {
+    /** ${KONG_FRONTEND_TOKEN} placeholder, resolved at generate or build time */
+    frontend_token: string;
+    client_ip_header: string;
+    token_header: string;
+    real_ip_header: string;
+  };
+}
+
+/**
  * tsdevstack-api-prefix plugin configuration
  */
 export interface ApiPrefixPluginConfig {

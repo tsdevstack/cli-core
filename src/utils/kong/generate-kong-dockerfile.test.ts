@@ -82,6 +82,12 @@ describe('generateKongDockerfile', () => {
     expect(result).toContain('KONG_PROXY_ERROR_LOG=/dev/stderr');
   });
 
+  it('should verify Redis TLS against the system CA bundle with room for cross-signed roots', () => {
+    const result = generateKongDockerfile();
+    expect(result).toContain('ENV KONG_LUA_SSL_TRUSTED_CERTIFICATE=system');
+    expect(result).toContain('ENV KONG_LUA_SSL_VERIFY_DEPTH=3');
+  });
+
   it('should use SIGQUIT for graceful shutdown', () => {
     const result = generateKongDockerfile();
     expect(result).toContain('STOPSIGNAL SIGQUIT');
