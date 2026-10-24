@@ -2,7 +2,7 @@
 
 **Infrastructure as Framework** for TypeScript microservices.
 
-One config file. Three cloud providers. Production-grade infrastructure — generated, not hand-written.
+One config file. Three cloud providers. Production-grade infrastructure: generated, not hand-written.
 
 ```bash
 npx @tsdevstack/cli init
@@ -12,27 +12,27 @@ npx @tsdevstack/cli init
 
 tsdevstack scaffolds a full-stack TypeScript monorepo and generates all the infrastructure around it:
 
-**Application layer** — NestJS backends, Next.js frontends, Rsbuild SPAs. Auto-generated TypeScript API clients with DTOs as separated imports — both frontend and backend apps consume the same type-safe library.
+**Application layer**: NestJS backends, Next.js frontends, Rsbuild SPAs. Auto-generated TypeScript API clients with DTOs as separated imports; both frontend and backend apps consume the same type-safe library.
 
-**API gateway** — Kong routes auto-generated from your OpenAPI specs. JWT validation, rate limiting, CORS, bot detection — configured, not coded. Fully customizable when you need it, or bring your own Kong config.
+**API gateway**: Kong routes auto-generated from your OpenAPI specs. JWT validation, rate limiting, CORS, bot detection: configured, not coded. Fully customizable when you need it, or bring your own Kong config.
 
-**Background processing** — BullMQ job queues with detached workers running in separate containers. Register, deploy, and scale workers independently from your API services.
+**Background processing**: BullMQ job queues with detached workers running in separate containers. Register, deploy, and scale workers independently from your API services.
 
-**Object storage** — Add buckets with `add-bucket-storage`. MinIO locally, S3/GCS/Azure Blob in production. Unified `StorageModule` with presigned URLs, streaming, and per-provider adapters.
+**Object storage**: Add buckets with `add-bucket-storage`. RustFS locally, S3/GCS/Azure Blob in production. Unified `StorageModule` with presigned URLs, streaming, and per-provider adapters.
 
-**Async messaging** — Inter-service pub/sub via Redis Streams. Consumer groups, dead letter queues, retry logic. No new infrastructure — runs on the same Redis instance as caching and BullMQ.
+**Async messaging**: Inter-service pub/sub via Redis Streams. Consumer groups, dead letter queues, retry logic. No new infrastructure: it runs on the same Redis instance as caching and BullMQ.
 
-**Authentication** — OWASP-aligned JWT token management, protected routes, session handling, email confirmation. Bring your own OIDC or use the built-in auth service template.
+**Authentication**: OWASP-aligned JWT token management, protected routes, session handling, email confirmation. Bring your own OIDC or use the built-in auth service template.
 
-**Secrets** — Generated locally, synced to cloud. Environment isolation, scoped per service, rotated on deploy. Secret Manager on all three providers.
+**Secrets**: Generated locally, synced to cloud. Environment isolation, scoped per service, rotated on deploy. Secret Manager on all three providers.
 
-**Observability** — Prometheus metrics, Grafana dashboards, distributed tracing with Jaeger, structured logging. Configured from day one.
+**Observability**: Prometheus metrics, Grafana dashboards, distributed tracing with Jaeger, structured logging. Configured from day one.
 
-**Infrastructure** — Generated Terraform for GCP, AWS, and Azure. VPC/VNet, managed databases, Redis, container orchestration, load balancers, WAF, SSL, CDN. One command to deploy.
+**Infrastructure**: Generated Terraform for GCP, AWS, and Azure. VPC/VNet, managed databases, Redis, container orchestration, load balancers, WAF, SSL, CDN. One command to deploy.
 
-**CI/CD** — Generated GitHub Actions workflows. OIDC authentication, per-service deploys, environment selection. No secrets in your repo.
+**CI/CD**: Generated GitHub Actions workflows. OIDC authentication, per-service deploys, environment selection. No secrets in your repo.
 
-**Compliance** — SOC 2, ISO 27001, GDPR technical controls built into the generated infrastructure. OWASP Top 10 coverage. Encryption at rest and in transit, network isolation, zero-credential runtimes.
+**Compliance**: SOC 2, ISO 27001, GDPR technical controls built into the generated infrastructure. OWASP Top 10 coverage. Encryption at rest and in transit, network isolation, zero-credential runtimes.
 
 ## Quick start
 
@@ -108,7 +108,7 @@ npx tsdevstack infra:deploy --env dev
 | `infra:init`          | Create Terraform state bucket                          |
 | `infra:generate`      | Generate Terraform files from config                   |
 | `infra:plan`          | Preview infrastructure changes                         |
-| `infra:deploy`        | Full deploy — Terraform, services, Kong, load balancer |
+| `infra:deploy`        | Full deploy: Terraform, services, Kong, load balancer |
 | `infra:destroy`       | Tear down all infrastructure for an environment        |
 | `infra:status`        | Check infrastructure status                            |
 | `infra:list-deployed` | List deployed services with versions                   |
@@ -165,10 +165,10 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 
 | Package | License | Description |
 | --- | --- | --- |
-| [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI — project scaffolding, infrastructure generation, deployment |
-| [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules — auth, secrets, storage, messaging, observability |
-| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server — AI agent integration with 54 tools |
-| [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection — behavioral analysis + honeypot |
+| [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI: project scaffolding, infrastructure generation, deployment |
+| [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules: auth, secrets, storage, messaging, observability |
+| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 54 tools |
+| [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection: behavioral analysis + honeypot |
 
 The infrastructure and cloud logic is licensed Apache-2.0 and source-available in the tsdevstack GitHub organization. It is bundled into the CLI rather than published to npm:
 

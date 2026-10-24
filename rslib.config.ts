@@ -7,7 +7,6 @@ export default defineConfig({
       format: 'esm',
       syntax: ['node 18'],
       dts: false,
-      autoExternal: true,
       source: {
         entry: {
           cli: './src/cli.ts',
@@ -21,6 +20,7 @@ export default defineConfig({
         },
       },
       output: {
+        autoExternal: true,
         minify: true,
         externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
         copy: [
@@ -38,13 +38,13 @@ export default defineConfig({
       format: 'esm',
       syntax: ['node 18'],
       dts: true,
-      autoExternal: true,
       source: {
         entry: {
           'plugin/index': './src/plugin/index.ts',
         },
       },
       output: {
+        autoExternal: true,
         externals: ['@tsdevstack/cli', '@tsdevstack/cli/plugin'],
       },
     },
