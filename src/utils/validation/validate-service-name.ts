@@ -4,9 +4,10 @@
  * Validates service names according to tsdevstack conventions.
  */
 
-import { CliError } from "../errors";
-import { RESERVED_NAMES } from "../../constants/reserved-names";
-import { NAME_LENGTH } from "../../constants/name-limits";
+import { CliError } from '../errors';
+import { RESERVED_NAMES } from '../../constants/reserved-names';
+import { NAME_LENGTH } from '../../constants/name-limits';
+import { SHARED_SECRET_SCOPE } from '../../constants/secret-scopes';
 
 /**
  * Validate a service name
@@ -17,6 +18,7 @@ import { NAME_LENGTH } from "../../constants/name-limits";
  * - Not start or end with hyphen
  * - Be 2-40 characters long (including -service suffix if present)
  * - Not be a reserved infrastructure name
+ * - Not start with "shared-" (the shared secret scope's prefix)
  * - Not end with -db (reserved for database containers)
  *
  * @param serviceName - The service name to validate (e.g., "auth-service")
@@ -28,7 +30,7 @@ export function validateServiceName(serviceName: string): void {
     throw new CliError(
       `Service name "${serviceName}" contains uppercase letters.\n` +
         `Service names must be all lowercase.\n` +
-        `Example: auth-service, user-management-service`
+        `Example: auth-service, user-management-service`,
     );
   }
 
@@ -37,16 +39,16 @@ export function validateServiceName(serviceName: string): void {
     const errors: string[] = [];
 
     if (/_/.test(serviceName)) {
-      errors.push("- Use hyphens instead of underscores");
+      errors.push('- Use hyphens instead of underscores');
     }
     if (!/^[a-z0-9-]+$/.test(serviceName)) {
-      errors.push("- Only lowercase letters, numbers, and hyphens are allowed");
+      errors.push('- Only lowercase letters, numbers, and hyphens are allowed');
     }
 
     throw new CliError(
       `Invalid service name: "${serviceName}"\n` +
-        errors.join("\n") +
-        `\n\nExample valid names: auth-service, user-management-service, payment-v2-service`
+        errors.join('\n') +
+        `\n\nExample valid names: auth-service, user-management-service, payment-v2-service`,
     );
   }
 
@@ -54,38 +56,48 @@ export function validateServiceName(serviceName: string): void {
   if (!/^[a-z]/.test(serviceName)) {
     throw new CliError(
       `Service name "${serviceName}" must start with a letter.\n` +
-        `Example: auth-service, user-service`
+        `Example: auth-service, user-service`,
     );
   }
 
   // Cannot start or end with hyphen
   if (/^-|-$/.test(serviceName)) {
     throw new CliError(
-      `Service name "${serviceName}" cannot start or end with a hyphen.`
+      `Service name "${serviceName}" cannot start or end with a hyphen.`,
     );
   }
 
   // Check reserved infrastructure names
-  const withoutSuffix = serviceName.replace(/-service$/, "");
+  const withoutSuffix = serviceName.replace(/-service$/, '');
   const isReserved = RESERVED_NAMES.some(
-    (reserved) => reserved === withoutSuffix
+    (reserved) => reserved === withoutSuffix,
   );
 
   if (isReserved) {
     throw new CliError(
       `Service name "${serviceName}" is reserved for infrastructure.\n` +
-        `Reserved names: ${RESERVED_NAMES.join(", ")}\n` +
-        `Please choose a different name.`
+        `Reserved names: ${RESERVED_NAMES.join(', ')}\n` +
+        `Please choose a different name.`,
+    );
+  }
+
+  // A service's own secrets are {project}-{service}-*: under "shared-" they
+  // would fall in the shared scope, which every service reads
+  if (serviceName.startsWith(`${SHARED_SECRET_SCOPE}-`)) {
+    throw new CliError(
+      `Service name "${serviceName}" cannot start with "${SHARED_SECRET_SCOPE}-".\n` +
+        `Its secrets would be readable by every service (the shared secret scope).\n` +
+        `Please choose a different name.`,
     );
   }
 
   // Cannot end with -db (check after removing -service suffix)
-  if (withoutSuffix.endsWith("-db")) {
-    const withoutDbSuffix = withoutSuffix.replace(/-db$/, "");
+  if (withoutSuffix.endsWith('-db')) {
+    const withoutDbSuffix = withoutSuffix.replace(/-db$/, '');
     throw new CliError(
       `Service names cannot end with "-db".\n` +
         `The "-db" suffix is reserved for database containers.\n` +
-        `Suggested: "${withoutDbSuffix}-service"`
+        `Suggested: "${withoutDbSuffix}-service"`,
     );
   }
 
@@ -93,7 +105,7 @@ export function validateServiceName(serviceName: string): void {
   if (serviceName.length < NAME_LENGTH.MIN_PREFIX) {
     throw new CliError(
       `Service name "${serviceName}" is too short (${serviceName.length} characters).\n` +
-        `Minimum: ${NAME_LENGTH.MIN_PREFIX} characters`
+        `Minimum: ${NAME_LENGTH.MIN_PREFIX} characters`,
     );
   }
 
@@ -101,7 +113,7 @@ export function validateServiceName(serviceName: string): void {
     throw new CliError(
       `Service name "${serviceName}" is too long (${serviceName.length} characters).\n` +
         `Maximum: ${NAME_LENGTH.MAX_TOTAL} characters\n` +
-        `This ensures compatibility with PostgreSQL identifier limits.`
+        `This ensures compatibility with PostgreSQL identifier limits.`,
     );
   }
 }

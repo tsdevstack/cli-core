@@ -3,7 +3,7 @@ import { getFrameworkGlobalPlugins } from './get-framework-global-plugins';
 
 describe('getFrameworkGlobalPlugins', () => {
   describe('Standard use cases', () => {
-    it('should return tsdevstack-strip-identity and tsdevstack-client-ip', () => {
+    it('should return tsdevstack-strip-identity, tsdevstack-client-ip and tsdevstack-trust', () => {
       expect(getFrameworkGlobalPlugins()).toEqual([
         { name: 'tsdevstack-strip-identity', config: {} },
         {
@@ -13,6 +13,13 @@ describe('getFrameworkGlobalPlugins', () => {
             client_ip_header: 'X-Tsdevstack-Client-IP',
             token_header: 'X-Tsdevstack-Frontend-Token',
             real_ip_header: 'X-Tsdevstack-Real-IP',
+          },
+        },
+        {
+          name: 'tsdevstack-trust',
+          config: {
+            token: '${KONG_TRUST_TOKEN}',
+            header: 'X-Kong-Trust',
           },
         },
       ]);

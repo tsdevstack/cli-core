@@ -43,6 +43,12 @@ import {
   DEFAULT_AWS_DATABASE_TIER,
   AZURE_DATABASE_CONNECTION_LIMITS,
   DEFAULT_AZURE_DATABASE_TIER,
+  SHARED_SECRET_SCOPE,
+  AUTH_SERVICE_NAME,
+  AZURE_KEYVAULT_NAME_ENV,
+  AZURE_SERVICE_KEYVAULT_NAME_ENV,
+  AUTH_SERVICE_SECRETS,
+  KONG_RUNTIME_SECRETS,
 } from '../constants';
 
 // Credentials utilities
@@ -71,6 +77,11 @@ import { loadUserSecrets } from '../utils/secrets/load-user-secrets';
 import { loadFrameworkSecrets } from '../utils/secrets/load-framework-secrets';
 import { generateServiceUrls } from '../utils/secrets/generate-service-urls';
 import { buildSecretName } from '../utils/secrets/build-secret-name';
+import { getSecretScope } from '../utils/secrets/get-secret-scope';
+import { buildKeyVaultName } from '../utils/cloud/azure/build-key-vault-name';
+import { keyVaultExists } from '../utils/cloud/azure/key-vault-exists';
+import { ensureKeyVaultExists } from '../utils/cloud/azure/ensure-key-vault-exists';
+import { createAzureCredential } from '../utils/cloud/azure/create-azure-credential';
 
 // Exec utilities
 import { executeCommand } from '../utils/exec';
@@ -98,6 +109,8 @@ import {
   buildFrameworkKongConfig,
   validateRequestTransformerHeaders,
   validateStripIdentityPlugin,
+  validateKongTrustTokenUse,
+  buildKongRuntimeSecretReferences,
 } from '../utils/kong';
 
 /**
@@ -135,6 +148,12 @@ export const pluginContext = {
   DEFAULT_AWS_DATABASE_TIER,
   AZURE_DATABASE_CONNECTION_LIMITS,
   DEFAULT_AZURE_DATABASE_TIER,
+  SHARED_SECRET_SCOPE,
+  AUTH_SERVICE_NAME,
+  AZURE_KEYVAULT_NAME_ENV,
+  AZURE_SERVICE_KEYVAULT_NAME_ENV,
+  AUTH_SERVICE_SECRETS,
+  KONG_RUNTIME_SECRETS,
 
   // Error handling
   CliError,
@@ -163,6 +182,11 @@ export const pluginContext = {
   loadFrameworkSecrets,
   generateServiceUrls,
   buildSecretName,
+  getSecretScope,
+  buildKeyVaultName,
+  keyVaultExists,
+  ensureKeyVaultExists,
+  createAzureCredential,
 
   // Exec utilities
   executeCommand,
@@ -189,6 +213,8 @@ export const pluginContext = {
   buildFrameworkKongConfig,
   validateRequestTransformerHeaders,
   validateStripIdentityPlugin,
+  validateKongTrustTokenUse,
+  buildKongRuntimeSecretReferences,
 } as const;
 
 export type PluginContext = typeof pluginContext;

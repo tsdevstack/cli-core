@@ -90,15 +90,17 @@ npx tsdevstack infra:deploy --env dev
 
 ### Cloud secrets
 
-| Command                | Description                           |
-| ---------------------- | ------------------------------------- |
-| `cloud:init`           | Initialize cloud provider credentials |
-| `cloud-secrets:push`   | Push local secrets to cloud           |
-| `cloud-secrets:diff`   | Compare local vs cloud secrets        |
-| `cloud-secrets:set`    | Set or update a cloud secret          |
-| `cloud-secrets:get`    | Retrieve a secret value               |
-| `cloud-secrets:list`   | List all secrets in an environment    |
-| `cloud-secrets:remove` | Remove a cloud secret                 |
+| Command                 | Description                                  |
+| ----------------------- | -------------------------------------------- |
+| `cloud:init`            | Initialize cloud provider credentials        |
+| `cloud-secrets:push`    | Push local secrets to cloud                  |
+| `cloud-secrets:diff`    | Compare local vs cloud secrets               |
+| `cloud-secrets:set`     | Set or update a cloud secret                 |
+| `cloud-secrets:get`     | Retrieve a secret value                      |
+| `cloud-secrets:list`    | List all secrets in an environment           |
+| `cloud-secrets:remove`  | Remove a cloud secret                        |
+| `cloud-secrets:migrate` | Copy secrets left in old places to new ones  |
+| `cloud-secrets:cleanup` | Delete the old copies of moved secrets       |
 
 ### Infrastructure
 
@@ -167,7 +169,7 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 | --- | --- | --- |
 | [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI: project scaffolding, infrastructure generation, deployment |
 | [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules: auth, secrets, storage, messaging, observability |
-| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 54 tools |
+| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 56 tools |
 | [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection: behavioral analysis + honeypot |
 
 The infrastructure and cloud logic is licensed Apache-2.0 and source-available in the tsdevstack GitHub organization. It is bundled into the CLI rather than published to npm:

@@ -45,6 +45,7 @@ import { buildApiKeyDefaultLimits } from './build-api-key-default-limits';
 import { getDefaultKongPlugins } from './default-plugins';
 import { mergeKongConfigs } from './merge-kong-configs';
 import { resolveEnvVars, type JsonValue } from './resolve-env-vars';
+import { buildKongRuntimeSecretReferences } from './build-kong-runtime-secret-references';
 import { processCorsOrigins } from './process-cors-origins';
 import { writeKongBuildContext } from './write-kong-build-context';
 import type { KongTemplate } from './types';
@@ -82,6 +83,7 @@ const START_TIMEOUT_MS = 90 * 1000;
 const TEST_TIMEOUT_MS = 30 * 1000;
 
 const TRUST_TOKEN = 'e2e-trust-token';
+const FRONTEND_TOKEN = 'e2e-frontend-token';
 const PARTNER_KEY = `tsk_${randomBytes(32).toString('base64url')}`;
 const PARTNER_KEY_ID = 'e2e-key-id';
 const PARTNER_CONSUMER = 'partner-acme';
@@ -173,11 +175,11 @@ function generateKongConfig(): KongTemplate {
     KONG_SERVICE_HOST: echoUrl,
     OIDC_DISCOVERY_URL: `${echoUrl}/.well-known/openid-configuration`,
     KONG_SSL_VERIFY: 'no',
-    KONG_TRUST_TOKEN: TRUST_TOKEN,
     KONG_CORS_ORIGINS: CORS_ORIGIN,
     REDIS_HOST: redisName,
     REDIS_PORT: '6379',
-    REDIS_PASSWORD,
+    // Kong reads these from its environment, as in production
+    ...buildKongRuntimeSecretReferences(),
   }) as unknown as KongTemplate;
   processCorsOrigins(resolved);
 
@@ -370,6 +372,12 @@ describe.skipIf(!dockerAvailable)('Generated Kong gateway (Docker)', () => {
         '127.0.0.1::8080',
         '-p',
         '127.0.0.1::8100',
+        '-e',
+        `REDIS_PASSWORD=${REDIS_PASSWORD}`,
+        '-e',
+        `KONG_TRUST_TOKEN=${TRUST_TOKEN}`,
+        '-e',
+        `KONG_FRONTEND_TOKEN=${FRONTEND_TOKEN}`,
         image,
       ]);
       const statusPort = await getContainerHostPort(kongName, 8100);
@@ -393,6 +401,15 @@ describe.skipIf(!dockerAvailable)('Generated Kong gateway (Docker)', () => {
   }, 120_000);
 
   describe('generated config', () => {
+    it('should keep the runtime secrets out of the config baked into the image', () => {
+      const baked = yaml.dump(kongConfig, { lineWidth: -1 });
+
+      expect(baked).not.toContain(REDIS_PASSWORD);
+      expect(baked).not.toContain(TRUST_TOKEN);
+      expect(baked).not.toContain(FRONTEND_TOKEN);
+      expect(baked).toContain('{vault://env/kong-trust-token}');
+    });
+
     it('should have no route- or service-level request-transformer or pre-function', () => {
       const perService = JSON.stringify(kongConfig.services);
 

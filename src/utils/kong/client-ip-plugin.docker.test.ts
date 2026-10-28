@@ -39,6 +39,7 @@ import { buildApiKeyDefaultLimits } from './build-api-key-default-limits';
 import { getDefaultKongPlugins } from './default-plugins';
 import { mergeKongConfigs } from './merge-kong-configs';
 import { resolveEnvVars, type JsonValue } from './resolve-env-vars';
+import { buildKongRuntimeSecretReferences } from './build-kong-runtime-secret-references';
 import { processCorsOrigins } from './process-cors-origins';
 import { writeKongBuildContext } from './write-kong-build-context';
 import type { KongTemplate } from './types';
@@ -145,12 +146,11 @@ function generateKongConfig(): KongTemplate {
     KONG_SERVICE_HOST: echoUrl,
     OIDC_DISCOVERY_URL: `${echoUrl}/.well-known/openid-configuration`,
     KONG_SSL_VERIFY: 'no',
-    KONG_TRUST_TOKEN: TRUST_TOKEN,
-    KONG_FRONTEND_TOKEN: FRONTEND_TOKEN,
     KONG_CORS_ORIGINS: CORS_ORIGIN,
     REDIS_HOST: redisName,
     REDIS_PORT: '6379',
-    REDIS_PASSWORD,
+    // Kong reads these from its environment, as in production
+    ...buildKongRuntimeSecretReferences(),
   }) as unknown as KongTemplate;
   processCorsOrigins(resolved);
   return resolved;
@@ -263,6 +263,12 @@ describe.skipIf(!dockerAvailable)(
           '127.0.0.1::8080',
           '-p',
           '127.0.0.1::8100',
+          '-e',
+          `REDIS_PASSWORD=${REDIS_PASSWORD}`,
+          '-e',
+          `KONG_TRUST_TOKEN=${TRUST_TOKEN}`,
+          '-e',
+          `KONG_FRONTEND_TOKEN=${FRONTEND_TOKEN}`,
           image,
         ]);
         const statusPort = await getContainerHostPort(kongName, 8100);

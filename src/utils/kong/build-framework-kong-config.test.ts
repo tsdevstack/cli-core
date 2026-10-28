@@ -26,6 +26,13 @@ describe('buildFrameworkKongConfig', () => {
               real_ip_header: 'X-Tsdevstack-Real-IP',
             },
           },
+          {
+            name: 'tsdevstack-trust',
+            config: {
+              token: '${KONG_TRUST_TOKEN}',
+              header: 'X-Kong-Trust',
+            },
+          },
         ],
       });
     });
@@ -36,7 +43,7 @@ describe('buildFrameworkKongConfig', () => {
       const config = buildFrameworkKongConfig([]);
 
       expect(config.services).toEqual([]);
-      expect(config.plugins).toHaveLength(2);
+      expect(config.plugins).toHaveLength(3);
     });
   });
 });

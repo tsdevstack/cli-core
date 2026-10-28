@@ -16,8 +16,9 @@ import type { ClientIpPluginConfig } from './plugin-types';
  * frontend token, the visitor address the frontend server sent becomes the
  * client the global rate limit counts, and the address backends receive in
  * X-Tsdevstack-Real-IP for their own per-IP limits. The token is the
- * ${KONG_FRONTEND_TOKEN} placeholder, resolved from the local secrets
- * (generate-kong) or the cloud secret store (infra:build-kong).
+ * ${KONG_FRONTEND_TOKEN} placeholder, which generate-kong and
+ * infra:build-kong turn into an env vault reference: Kong reads the value
+ * from its environment when it starts.
  *
  * @returns Plugin entry
  */

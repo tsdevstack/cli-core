@@ -24,10 +24,9 @@ describe('getDefaultKongPlugins', () => {
 
       expect(requestTransformer).toBeDefined();
       expect(requestTransformer?.config).toHaveProperty('remove');
-      expect(requestTransformer?.config).toHaveProperty('add');
     });
 
-    it('should only remove X-Kong-Request-Id and X-Kong-Trust in request-transformer', () => {
+    it('should only remove X-Kong-Request-Id in request-transformer', () => {
       const plugins = getDefaultKongPlugins();
       const requestTransformer = plugins.find(
         (p) => p.name === 'request-transformer',
@@ -36,20 +35,18 @@ describe('getDefaultKongPlugins', () => {
       const removeConfig = requestTransformer?.config.remove as {
         headers: string[];
       };
-      expect(removeConfig.headers).toEqual([
-        'X-Kong-Request-Id',
-        'X-Kong-Trust',
-      ]);
+      expect(removeConfig.headers).toEqual(['X-Kong-Request-Id']);
     });
 
-    it('should add trust token header in request-transformer', () => {
-      const plugins = getDefaultKongPlugins();
-      const requestTransformer = plugins.find(
+    it('should leave the trust header to the framework plugin tsdevstack-trust', () => {
+      const requestTransformer = getDefaultKongPlugins().find(
         (p) => p.name === 'request-transformer',
       );
 
-      const addConfig = requestTransformer?.config.add as { headers: string[] };
-      expect(addConfig.headers).toEqual(['X-Kong-Trust:${KONG_TRUST_TOKEN}']);
+      expect(requestTransformer?.config).not.toHaveProperty('add');
+      expect(JSON.stringify(getDefaultKongPlugins())).not.toContain(
+        'KONG_TRUST_TOKEN',
+      );
     });
 
     it('should include CORS plugin', () => {
@@ -201,7 +198,7 @@ describe('getDefaultKongPlugins', () => {
     });
 
     describe('Security headers validation', () => {
-      it('should remove all Kong internal headers', () => {
+      it('should remove the request id header', () => {
         const plugins = getDefaultKongPlugins();
         const requestTransformer = plugins.find(
           (p) => p.name === 'request-transformer',
@@ -213,9 +210,7 @@ describe('getDefaultKongPlugins', () => {
         const kongInternalHeaders = removeConfig.headers.filter((h) =>
           h.startsWith('X-Kong-'),
         );
-        expect(kongInternalHeaders).toHaveLength(2);
-        expect(kongInternalHeaders).toContain('X-Kong-Request-Id');
-        expect(kongInternalHeaders).toContain('X-Kong-Trust');
+        expect(kongInternalHeaders).toEqual(['X-Kong-Request-Id']);
       });
     });
   });

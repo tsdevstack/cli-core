@@ -6,6 +6,9 @@
 
 import { rs } from '@rstest/core';
 import { AZURE_REQUIRED_RESOURCE_PROVIDERS } from '../constants/cloud-providers';
+import { buildKeyVaultName } from '../utils/cloud/azure/build-key-vault-name';
+import { buildKongRuntimeSecretReferences } from '../utils/kong/build-kong-runtime-secret-references';
+import { buildSecretName } from '../utils/secrets/build-secret-name';
 
 /**
  * Create all mock functions for the plugin context
@@ -87,6 +90,23 @@ export function createMockContext() {
     buildFrameworkKongConfig: rs.fn(),
     validateRequestTransformerHeaders: rs.fn(() => []),
     validateStripIdentityPlugin: rs.fn(() => true),
+    validateKongTrustTokenUse: rs.fn(),
+    // Pure: the real references, so plugin tests see what Kong is given
+    buildKongRuntimeSecretReferences,
+    // Pure: the real naming, so plugin tests see the names deploy computes
+    buildKeyVaultName,
+    buildSecretName,
+    keyVaultExists: rs.fn(),
+    ensureKeyVaultExists: rs.fn(),
+    createAzureCredential: rs.fn(() => ({})),
+    SHARED_SECRET_SCOPE: 'shared',
+    AZURE_KEYVAULT_NAME_ENV: 'AZURE_KEYVAULT_NAME',
+    AZURE_SERVICE_KEYVAULT_NAME_ENV: 'AZURE_SERVICE_KEYVAULT_NAME',
+    KONG_RUNTIME_SECRETS: [
+      'REDIS_PASSWORD',
+      'KONG_TRUST_TOKEN',
+      'KONG_FRONTEND_TOKEN',
+    ] as const,
   };
 }
 

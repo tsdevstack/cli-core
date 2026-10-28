@@ -568,6 +568,27 @@ describe('generateSecretsLocal', () => {
       expect(mergeCall).toBeGreaterThan(0);
     });
 
+    it('should write the merged secrets with each secret in its scope', () => {
+      const scoped = {
+        secrets: { KONG_TRUST_TOKEN: 'trust' },
+        'auth-service': { JWT_PRIVATE_KEY_CURRENT: 'key' },
+      };
+      rs.mocked(secretsModule.applySecretScopes).mockReturnValue(scoped);
+
+      generateSecretsLocal();
+
+      const merged = rs.mocked(secretsModule.mergeSecrets).mock.results[0]
+        .value as unknown;
+      expect(secretsModule.applySecretScopes).toHaveBeenCalledWith(
+        merged,
+        mockConfig,
+      );
+      const localWrite = rs
+        .mocked(secretsModule.writeSecretsFile)
+        .mock.calls.find((call) => call[0] === '.secrets.local.json');
+      expect(localWrite?.[1]).toEqual(expect.objectContaining(scoped));
+    });
+
     it('should generate env file after local secrets are written', () => {
       generateSecretsLocal();
 

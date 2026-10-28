@@ -27,6 +27,8 @@ export * from './sync-user-secrets-structure';
 // Utilities
 export * from './get-required-secret';
 export * from './merge-secrets';
+export * from './get-secret-scope';
+export * from './apply-secret-scopes';
 export * from './resolve-api-key-references';
 export * from './generate-env-file';
 export * from './generate-nextjs-env-files';

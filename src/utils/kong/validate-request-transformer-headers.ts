@@ -65,7 +65,7 @@ export function validateRequestTransformerHeaders(
       '   It runs after the auth plugins, so it deletes the identity Kong just set (for example X-Userinfo from oidc, or X-Api-Key-Consumer from the API key plugin: @Partner() gets no consumer).',
     );
     logger.warn(
-      `   Client-sent identity headers are already removed by ${KONG_STRIP_IDENTITY_PLUGIN_NAME}. Remove these entries; keep only X-Kong-Request-Id and X-Kong-Trust.`,
+      `   Client-sent identity headers are already removed by ${KONG_STRIP_IDENTITY_PLUGIN_NAME}. Remove these entries; keep only X-Kong-Request-Id.`,
     );
   }
 

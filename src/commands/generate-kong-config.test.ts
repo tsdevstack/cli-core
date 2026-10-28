@@ -327,6 +327,53 @@ describe('generateKongConfig', () => {
       );
     });
 
+    it("should resolve Kong's runtime secrets to env vault references, never values", () => {
+      rs.mocked(secretsModule.loadLocalSecrets).mockReturnValue({
+        ...mockSecrets,
+        REDIS_PASSWORD: 'local-redis-password',
+        KONG_TRUST_TOKEN: 'local-trust-token',
+        KONG_FRONTEND_TOKEN: 'local-frontend-token',
+      });
+
+      generateKongConfig();
+
+      const secrets = rs.mocked(kongModule.resolveEnvVars).mock
+        .calls[0][1] as Record<string, string>;
+      expect(secrets.REDIS_PASSWORD).toBe('{vault://env/redis-password}');
+      expect(secrets.KONG_TRUST_TOKEN).toBe('{vault://env/kong-trust-token}');
+      expect(secrets.KONG_FRONTEND_TOKEN).toBe(
+        '{vault://env/kong-frontend-token}',
+      );
+    });
+
+    it('should stop when kong.user.yml still adds the trust token itself', () => {
+      rs.mocked(fsModule.isFile).mockImplementation(
+        (p: string) =>
+          p.endsWith('openapi.json') || p.endsWith('kong.user.yml'),
+      );
+      rs.mocked(fsModule.readYamlFile).mockReturnValue({
+        _format_version: '3.0',
+        services: [],
+        plugins: [
+          {
+            name: 'request-transformer',
+            config: {
+              remove: { headers: ['X-Kong-Request-Id', 'X-Kong-Trust'] },
+              add: { headers: ['X-Kong-Trust:${KONG_TRUST_TOKEN}'] },
+            },
+          },
+        ],
+      });
+
+      expect(() => generateKongConfig()).toThrow(
+        'kong.user.yml: request-transformer uses ${KONG_TRUST_TOKEN}',
+      );
+      expect(fsModule.writeYamlFile).not.toHaveBeenCalledWith(
+        expect.stringMatching(/kong\.yml$/),
+        expect.anything(),
+      );
+    });
+
     it('should write kong.tsdevstack.yml', () => {
       generateKongConfig();
 
@@ -357,6 +404,13 @@ describe('generateKongConfig', () => {
                 client_ip_header: 'X-Tsdevstack-Client-IP',
                 token_header: 'X-Tsdevstack-Frontend-Token',
                 real_ip_header: 'X-Tsdevstack-Real-IP',
+              },
+            },
+            {
+              name: 'tsdevstack-trust',
+              config: {
+                token: '${KONG_TRUST_TOKEN}',
+                header: 'X-Kong-Trust',
               },
             },
           ],

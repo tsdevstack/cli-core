@@ -59,6 +59,8 @@ import { mergeKongConfigs } from '../utils/kong/merge-kong-configs';
 import { buildFrameworkKongConfig } from '../utils/kong/build-framework-kong-config';
 import { validateRequestTransformerHeaders } from '../utils/kong/validate-request-transformer-headers';
 import { validateStripIdentityPlugin } from '../utils/kong/validate-strip-identity-plugin';
+import { validateKongTrustTokenUse } from '../utils/kong/validate-kong-trust-token-use';
+import { buildKongRuntimeSecretReferences } from '../utils/kong/build-kong-runtime-secret-references';
 import { warnStaticPartnerConsumers } from '../utils/kong/warn-static-partner-consumers';
 import { buildApiKeyDefaultLimits } from '../utils/kong/build-api-key-default-limits';
 import type { PartnerApiSettings } from '../utils/kong/types';
@@ -84,6 +86,10 @@ export function generateKongConfig(_context?: OperationContext): void {
   // Override REDIS_HOST for Kong (runs in Docker, needs docker service name)
   secrets.REDIS_HOST = KONG_REDIS_HOST;
 
+  // Kong's runtime secrets stay out of kong.yml: env vault references,
+  // resolved from Kong's environment (docker-compose, from the root .env)
+  Object.assign(secrets, buildKongRuntimeSecretReferences());
+
   // Check for kong.custom.yml (escape hatch)
   const customConfigPath = path.join(rootDir, 'kong.custom.yml');
 
@@ -100,6 +106,7 @@ export function generateKongConfig(_context?: OperationContext): void {
     const customConfig = readYamlFile(customConfigPath) as KongTemplate;
     validateStripIdentityPlugin(customConfig, 'kong.custom.yml');
     validateRequestTransformerHeaders(customConfig, 'kong.custom.yml');
+    validateKongTrustTokenUse(customConfig, 'kong.custom.yml');
 
     // Resolve placeholders
     const resolvedConfig = resolveEnvVars(
@@ -257,6 +264,7 @@ export function generateKongConfig(_context?: OperationContext): void {
     logger.info('   kong.user.yml exists - using existing file');
     userConfig = readYamlFile(userConfigPath) as KongTemplate;
     validateRequestTransformerHeaders(userConfig, 'kong.user.yml');
+    validateKongTrustTokenUse(userConfig, 'kong.user.yml');
     warnStaticPartnerConsumers(userConfig, 'kong.user.yml');
   }
   logger.newline();
@@ -386,7 +394,9 @@ export function generateKongConfig(_context?: OperationContext): void {
   // Step 9: Write final kong.yml
   logger.info('Step 9: Writing kong.yml...');
   writeYamlFile(path.join(rootDir, 'kong.yml'), resolvedConfig);
-  logger.success('Generated kong.yml (with actual secret values)');
+  logger.success(
+    'Generated kong.yml (Kong reads REDIS_PASSWORD, KONG_TRUST_TOKEN and KONG_FRONTEND_TOKEN from its environment)',
+  );
   logger.newline();
 
   // Step 10: Write the local Kong image build context

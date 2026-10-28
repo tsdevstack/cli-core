@@ -138,6 +138,25 @@ describe('validateServiceName', () => {
     });
   });
 
+  describe('secret scope names', () => {
+    it('should throw for the secret scope names', () => {
+      expect(() => validateServiceName('shared')).toThrow(CliError);
+      expect(() => validateServiceName('shared-service')).toThrow(CliError);
+      expect(() => validateServiceName('secrets')).toThrow(CliError);
+    });
+
+    it('should throw for names in the shared scope prefix', () => {
+      expect(() => validateServiceName('shared-billing')).toThrow(
+        'cannot start with "shared-"',
+      );
+    });
+
+    it('should accept names that only contain "shared"', () => {
+      expect(() => validateServiceName('file-sharing')).not.toThrow();
+      expect(() => validateServiceName('sharedocs')).not.toThrow();
+    });
+  });
+
   describe('cannot end with -db', () => {
     it('should throw for names ending with -db', () => {
       expect(() => validateServiceName('user-db')).toThrow(CliError);

@@ -44,6 +44,7 @@ import { buildApiKeyDefaultLimits } from './build-api-key-default-limits';
 import { getDefaultKongPlugins } from './default-plugins';
 import { mergeKongConfigs } from './merge-kong-configs';
 import { resolveEnvVars, type JsonValue } from './resolve-env-vars';
+import { buildKongRuntimeSecretReferences } from './build-kong-runtime-secret-references';
 import { processCorsOrigins } from './process-cors-origins';
 import { writeKongBuildContext } from './write-kong-build-context';
 import type { KongPlugin, KongTemplate } from './types';
@@ -85,6 +86,7 @@ const START_TIMEOUT_MS = 90 * 1000;
 const TEST_TIMEOUT_MS = 60 * 1000;
 
 const TRUST_TOKEN = 'e2e-trust-token';
+const FRONTEND_TOKEN = 'e2e-frontend-token';
 const CORS_ORIGIN = 'http://localhost:3000';
 const REDIS_PASSWORD = 'e2e-redis-pass';
 /** Global rate-limiting minute in the suite's kong.user.yml */
@@ -176,11 +178,11 @@ function generateKongConfig(): KongTemplate {
     KONG_SERVICE_HOST: echoUrl,
     OIDC_DISCOVERY_URL: `${echoUrl}/.well-known/openid-configuration`,
     KONG_SSL_VERIFY: 'no',
-    KONG_TRUST_TOKEN: TRUST_TOKEN,
     KONG_CORS_ORIGINS: CORS_ORIGIN,
     REDIS_HOST: redisName,
     REDIS_PORT: '6379',
-    REDIS_PASSWORD,
+    // Kong reads these from its environment, as in production
+    ...buildKongRuntimeSecretReferences(),
   }) as unknown as KongTemplate;
   processCorsOrigins(resolved);
 
@@ -408,6 +410,12 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
         '127.0.0.1::8080',
         '-p',
         '127.0.0.1::8100',
+        '-e',
+        `REDIS_PASSWORD=${REDIS_PASSWORD}`,
+        '-e',
+        `KONG_TRUST_TOKEN=${TRUST_TOKEN}`,
+        '-e',
+        `KONG_FRONTEND_TOKEN=${FRONTEND_TOKEN}`,
         image,
       ]);
       const statusPort = await getContainerHostPort(kongName, 8100);
@@ -435,7 +443,8 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
       const redisBlock = {
         host: redisName,
         port: 6379,
-        password: REDIS_PASSWORD,
+        // Read from Kong's environment, never in the config
+        password: '{vault://env/redis-password}',
         database: 0,
         timeout: 2000,
       };

@@ -26,6 +26,7 @@ import {
   generateUserSecretsExample,
   syncUserSecretsStructure,
   mergeSecrets,
+  applySecretScopes,
   loadFrameworkSecrets as loadFrameworkSecretsFile,
   loadUserSecrets as loadUserSecretsFile,
   writeSecretsFile,
@@ -153,7 +154,11 @@ export function generateSecretsLocal(context?: OperationContext): void {
   // Step 5: Merge framework + user → local
   logger.newline();
   logger.generating(`Generating ${LOCAL_SECRETS_FILE}...`);
-  const merged = mergeSecrets(frameworkSecrets, userSecrets);
+  // Each secret in its scope: a service reads locally what it reads in the cloud
+  const merged = applySecretScopes(
+    mergeSecrets(frameworkSecrets, userSecrets),
+    config,
+  );
 
   // Add metadata to merged file
   const localSecrets: SecretsFile = {

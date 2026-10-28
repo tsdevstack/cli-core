@@ -15,6 +15,13 @@ export const RESERVED_NAMES = [
   'postgresql',
   'mysql',
   'mongodb',
+  // Secret scopes: "shared" is the scope every service reads, "secrets" the
+  // block of .secrets.local.json that holds it
+  'shared',
+  'secrets',
+  // Azure: the shared Key Vault is {project}-{env}-kv, a service's vault
+  // {project}-{env}-{service}
+  'kv',
 ] as const;
 
 /**

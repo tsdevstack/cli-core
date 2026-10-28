@@ -25,6 +25,8 @@ export { buildApiKeyDefaultLimits } from './build-api-key-default-limits';
 export { warnStaticPartnerConsumers } from './warn-static-partner-consumers';
 export { generateStripIdentityPlugin } from './generate-strip-identity-plugin';
 export { generateClientIpPlugin } from './generate-client-ip-plugin';
+export { generateTrustPlugin } from './generate-trust-plugin';
+export { buildKongRuntimeSecretReferences } from './build-kong-runtime-secret-references';
 export { generateApiPrefixPlugin } from './generate-api-prefix-plugin';
 export { getFrameworkGlobalPlugins } from './get-framework-global-plugins';
 export { buildFrameworkKongConfig } from './build-framework-kong-config';
@@ -35,6 +37,7 @@ export {
 } from './generate-exact-routes';
 export { validateRequestTransformerHeaders } from './validate-request-transformer-headers';
 export { validateStripIdentityPlugin } from './validate-strip-identity-plugin';
+export { validateKongTrustTokenUse } from './validate-kong-trust-token-use';
 export {
   generateKongDockerfile,
   type GenerateKongDockerfileOptions,

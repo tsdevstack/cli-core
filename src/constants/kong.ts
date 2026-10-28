@@ -240,10 +240,37 @@ export const KONG_API_PREFIX_PLUGIN_NAME = 'tsdevstack-api-prefix';
 export const KONG_PARTNER_PATH_PREFIX = '/api';
 
 /**
- * Header carrying the Kong trust token (removed and re-added by the global
- * request-transformer).
+ * Header carrying the Kong trust token (set by tsdevstack-trust; a
+ * client-sent value is removed by tsdevstack-strip-identity).
  */
 export const KONG_TRUST_HEADER = 'X-Kong-Trust';
+
+/**
+ * Framework secret the backends check in KONG_TRUST_HEADER: proof that a
+ * request came through Kong.
+ */
+export const KONG_TRUST_TOKEN_SECRET = 'KONG_TRUST_TOKEN';
+
+/**
+ * Framework plugin that sets KONG_TRUST_HEADER on every request Kong passes
+ * to a backend (global plugin in kong.tsdevstack.yml). Source:
+ * templates/kong-plugins/tsdevstack-trust.
+ */
+export const KONG_TRUST_PLUGIN_NAME = 'tsdevstack-trust';
+
+/**
+ * Secrets Kong reads when it starts, never baked into the Kong image. The
+ * config holds `${KEY}` placeholders; generate-kong and infra:build-kong turn
+ * them into env vault references ({vault://env/redis-password}), and the
+ * platform (docker-compose, Cloud Run, ECS, App Service) gives Kong each value
+ * as an environment variable of the same name. Only referenceable plugin
+ * fields can hold them.
+ */
+export const KONG_RUNTIME_SECRETS = [
+  'REDIS_PASSWORD',
+  'KONG_TRUST_TOKEN',
+  'KONG_FRONTEND_TOKEN',
+] as const;
 
 /**
  * Header with Kong's request id (removed by the global request-transformer).

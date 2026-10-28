@@ -51,6 +51,15 @@ describe('generateKongService', () => {
     expect(env.KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE).toBe('0');
   });
 
+  it("should pass Kong's runtime secrets from the root .env, not in kong.yml", () => {
+    const result = generateKongService('net', 'shop');
+    const env = result.gateway.environment as Record<string, string>;
+
+    expect(env.REDIS_PASSWORD).toBe('${REDIS_PASSWORD}');
+    expect(env.KONG_TRUST_TOKEN).toBe('${KONG_TRUST_TOKEN}');
+    expect(env.KONG_FRONTEND_TOKEN).toBe('${KONG_FRONTEND_TOKEN}');
+  });
+
   it('should expose proxy and admin ports', () => {
     const result = generateKongService('net', 'shop');
 

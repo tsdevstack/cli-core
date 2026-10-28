@@ -88,12 +88,24 @@ export interface StripIdentityPluginConfig {
 }
 
 /**
+ * tsdevstack-trust plugin configuration
+ */
+export interface TrustPluginConfig {
+  name: 'tsdevstack-trust';
+  config: {
+    /** ${KONG_TRUST_TOKEN} placeholder, resolved to an env vault reference */
+    token: string;
+    header: string;
+  };
+}
+
+/**
  * tsdevstack-client-ip plugin configuration
  */
 export interface ClientIpPluginConfig {
   name: 'tsdevstack-client-ip';
   config: {
-    /** ${KONG_FRONTEND_TOKEN} placeholder, resolved at generate or build time */
+    /** ${KONG_FRONTEND_TOKEN} placeholder, resolved to an env vault reference */
     frontend_token: string;
     client_ip_header: string;
     token_header: string;

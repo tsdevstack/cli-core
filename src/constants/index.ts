@@ -10,6 +10,7 @@ export * from './paths';
 
 // Secrets constants
 export * from './secrets';
+export * from './secret-scopes';
 
 // Service type constants
 export * from './service-types';
