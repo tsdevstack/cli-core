@@ -59,7 +59,11 @@ function writeGrafanaConfigs(rootDir: string): void {
   const dashboardsDir = path.join(grafanaDir, 'dashboards');
 
   // Create directories
-  for (const dir of [datasourcesDir, dashboardsProvisioningDir, dashboardsDir]) {
+  for (const dir of [
+    datasourcesDir,
+    dashboardsProvisioningDir,
+    dashboardsDir,
+  ]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -88,7 +92,10 @@ function writeGrafanaConfigs(rootDir: string): void {
       {
         name: 'default',
         orgId: 1,
-        folder: '',
+        // A named folder: Grafana 12 and later show dashboards at the root
+        // only to admins, while a provisioned folder gives Viewers (and the
+        // anonymous local visitor) view access
+        folder: 'tsdevstack',
         type: 'file',
         disableDeletion: false,
         editable: true,
@@ -100,14 +107,14 @@ function writeGrafanaConfigs(rootDir: string): void {
   };
   writeYamlFile(
     path.join(dashboardsProvisioningDir, 'dashboard.yml'),
-    dashboardProvisioningConfig
+    dashboardProvisioningConfig,
   );
 
   // Write services dashboard
   const servicesDashboard = createServicesDashboard();
   fs.writeFileSync(
     path.join(dashboardsDir, 'services.json'),
-    JSON.stringify(servicesDashboard, null, 2)
+    JSON.stringify(servicesDashboard, null, 2),
   );
 }
 
@@ -144,7 +151,10 @@ function createServicesDashboard(): object {
               stacking: { group: 'A', mode: 'none' },
             },
             mappings: [],
-            thresholds: { mode: 'absolute', steps: [{ color: 'green', value: null }] },
+            thresholds: {
+              mode: 'absolute',
+              steps: [{ color: 'green', value: null }],
+            },
             unit: 's',
           },
           overrides: [],
@@ -152,7 +162,12 @@ function createServicesDashboard(): object {
         gridPos: { h: 8, w: 12, x: 0, y: 0 },
         id: 1,
         options: {
-          legend: { calcs: [], displayMode: 'list', placement: 'bottom', showLegend: true },
+          legend: {
+            calcs: [],
+            displayMode: 'list',
+            placement: 'bottom',
+            showLegend: true,
+          },
           tooltip: { mode: 'single', sort: 'none' },
         },
         title: 'HTTP Request Duration (p95)',
@@ -187,7 +202,10 @@ function createServicesDashboard(): object {
               stacking: { group: 'A', mode: 'none' },
             },
             mappings: [],
-            thresholds: { mode: 'absolute', steps: [{ color: 'green', value: null }] },
+            thresholds: {
+              mode: 'absolute',
+              steps: [{ color: 'green', value: null }],
+            },
             unit: 'reqps',
           },
           overrides: [],
@@ -195,7 +213,12 @@ function createServicesDashboard(): object {
         gridPos: { h: 8, w: 12, x: 12, y: 0 },
         id: 2,
         options: {
-          legend: { calcs: [], displayMode: 'list', placement: 'bottom', showLegend: true },
+          legend: {
+            calcs: [],
+            displayMode: 'list',
+            placement: 'bottom',
+            showLegend: true,
+          },
           tooltip: { mode: 'single', sort: 'none' },
         },
         title: 'Request Rate',
@@ -230,7 +253,10 @@ function createServicesDashboard(): object {
               stacking: { group: 'A', mode: 'none' },
             },
             mappings: [],
-            thresholds: { mode: 'absolute', steps: [{ color: 'green', value: null }] },
+            thresholds: {
+              mode: 'absolute',
+              steps: [{ color: 'green', value: null }],
+            },
             unit: 'bytes',
           },
           overrides: [],
@@ -238,7 +264,12 @@ function createServicesDashboard(): object {
         gridPos: { h: 8, w: 12, x: 0, y: 8 },
         id: 3,
         options: {
-          legend: { calcs: [], displayMode: 'list', placement: 'bottom', showLegend: true },
+          legend: {
+            calcs: [],
+            displayMode: 'list',
+            placement: 'bottom',
+            showLegend: true,
+          },
           tooltip: { mode: 'single', sort: 'none' },
         },
         title: 'Memory Usage',
@@ -273,7 +304,10 @@ function createServicesDashboard(): object {
               stacking: { group: 'A', mode: 'none' },
             },
             mappings: [],
-            thresholds: { mode: 'absolute', steps: [{ color: 'green', value: null }] },
+            thresholds: {
+              mode: 'absolute',
+              steps: [{ color: 'green', value: null }],
+            },
             unit: 'percent',
           },
           overrides: [],
@@ -281,7 +315,12 @@ function createServicesDashboard(): object {
         gridPos: { h: 8, w: 12, x: 12, y: 8 },
         id: 4,
         options: {
-          legend: { calcs: [], displayMode: 'list', placement: 'bottom', showLegend: true },
+          legend: {
+            calcs: [],
+            displayMode: 'list',
+            placement: 'bottom',
+            showLegend: true,
+          },
           tooltip: { mode: 'single', sort: 'none' },
         },
         title: 'Error Rate',
@@ -315,7 +354,7 @@ function createServicesDashboard(): object {
  */
 export function writeMonitoringConfigs(
   rootDir: string,
-  config: FrameworkConfig
+  config: FrameworkConfig,
 ): void {
   writePrometheusConfig(rootDir, config);
   writeGrafanaConfigs(rootDir);

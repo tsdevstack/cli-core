@@ -4,6 +4,7 @@
 
 import {
   KONG_CLIENT_IP_HEADER,
+  KONG_CLIENT_TRACE_HEADERS,
   KONG_CLIENT_IP_PLUGIN_NAME,
   KONG_FRONTEND_TOKEN_HEADER,
   KONG_FRONTEND_TOKEN_SECRET,
@@ -30,6 +31,7 @@ export function generateClientIpPlugin(): ClientIpPluginConfig {
       client_ip_header: KONG_CLIENT_IP_HEADER,
       token_header: KONG_FRONTEND_TOKEN_HEADER,
       real_ip_header: KONG_UPSTREAM_CLIENT_IP_HEADER,
+      trace_headers: [...KONG_CLIENT_TRACE_HEADERS],
     },
   };
 }

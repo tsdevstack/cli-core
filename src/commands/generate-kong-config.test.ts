@@ -404,6 +404,7 @@ describe('generateKongConfig', () => {
                 client_ip_header: 'X-Tsdevstack-Client-IP',
                 token_header: 'X-Tsdevstack-Frontend-Token',
                 real_ip_header: 'X-Tsdevstack-Real-IP',
+                trace_headers: ['traceparent', 'tracestate', 'baggage'],
               },
             },
             {
@@ -411,6 +412,20 @@ describe('generateKongConfig', () => {
               config: {
                 token: '${KONG_TRUST_TOKEN}',
                 header: 'X-Kong-Trust',
+              },
+            },
+            {
+              // Locally Kong sends every trace straight to Jaeger
+              name: 'opentelemetry',
+              config: {
+                traces_endpoint: 'http://jaeger:4318/v1/traces',
+                sampling_rate: 1,
+                resource_attributes: { 'service.name': 'kong' },
+                propagation: {
+                  extract: ['w3c'],
+                  inject: ['w3c'],
+                  default_format: 'w3c',
+                },
               },
             },
           ],

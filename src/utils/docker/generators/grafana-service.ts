@@ -5,11 +5,11 @@
 import type { DockerComposeServices } from '../types';
 
 export function generateGrafanaService(
-  networkName: string
+  networkName: string,
 ): DockerComposeServices {
   return {
     grafana: {
-      image: 'grafana/grafana:10.2.0',
+      image: 'grafana/grafana:13.3.0',
       restart: 'always',
       ports: ['4001:3000'],
       environment: [

@@ -170,7 +170,11 @@ function generateKongConfig(): KongTemplate {
   });
 
   const merged = mergeKongConfigs(
-    buildFrameworkKongConfig(services),
+    // No collector in these tests: Kong's export fails quietly
+    buildFrameworkKongConfig(services, {
+      tracesEndpoint: 'http://127.0.0.1:4318/v1/traces',
+      sampleRate: 1,
+    }),
     userConfig,
   );
 

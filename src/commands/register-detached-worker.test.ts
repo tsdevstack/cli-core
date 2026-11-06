@@ -471,7 +471,7 @@ describe('registerDetachedWorker', () => {
       });
 
       expect(logger.info).toHaveBeenCalledWith(
-        '  1. Create worker.ts and worker.module.ts (see Phase 20 docs)',
+        '  1. Create the worker files and scripts listed above (auth-service in the auth template has them)',
       );
     });
   });

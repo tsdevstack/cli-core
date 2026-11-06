@@ -7,7 +7,7 @@ describe('generateGrafanaService', () => {
 
     expect(result).toHaveProperty('grafana');
     const service = result.grafana;
-    expect(service.image).toBe('grafana/grafana:10.2.0');
+    expect(service.image).toBe('grafana/grafana:13.3.0');
     expect(service.restart).toBe('always');
     expect(service.networks).toEqual(['test-network']);
   });

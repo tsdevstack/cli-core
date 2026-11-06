@@ -51,7 +51,11 @@ import {
   hasAuthTemplate,
   resolveApiKeyIpLimit,
 } from '../utils/config';
-import { KONG_REDIS_HOST, KONG_LOCAL_BUILD_CONTEXT } from '../constants';
+import {
+  KONG_REDIS_HOST,
+  KONG_LOCAL_BUILD_CONTEXT,
+  KONG_LOCAL_TRACES_ENDPOINT,
+} from '../constants';
 import { parseOpenApiSecurity } from '../utils/openapi';
 import { generateSecurityBasedServices } from '../utils/kong/generate-security-routes';
 import { type OperationContext } from '../utils/types/operation-context';
@@ -359,8 +363,12 @@ export function generateKongConfig(_context?: OperationContext): void {
   logger.info('Step 4: Building framework config (kong.tsdevstack.yml)...');
   logger.newline();
 
-  // Framework file: services and framework global plugins
-  const tsdevstackConfig = buildFrameworkKongConfig(kongServices);
+  // Framework file: services and framework global plugins. Locally Kong
+  // sends every trace straight to Jaeger.
+  const tsdevstackConfig = buildFrameworkKongConfig(kongServices, {
+    tracesEndpoint: KONG_LOCAL_TRACES_ENDPOINT,
+    sampleRate: 1,
+  });
 
   // Write kong.tsdevstack.yml (ALWAYS regenerated)
   const tsdevstackPath = path.join(rootDir, 'kong.tsdevstack.yml');

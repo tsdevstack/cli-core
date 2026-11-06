@@ -53,6 +53,12 @@ describe('generateKongDockerfile', () => {
     );
   });
 
+  it("should turn on Kong's tracing for requests and upstream tries", () => {
+    expect(generateKongDockerfile()).toContain(
+      'ENV KONG_TRACING_INSTRUMENTATIONS=request,balancer',
+    );
+  });
+
   it('should configure database-less mode', () => {
     const result = generateKongDockerfile();
     expect(result).toContain('KONG_DATABASE=off');

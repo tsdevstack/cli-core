@@ -119,6 +119,7 @@ describe('generateSecurityBasedServices', () => {
     it('should keep them out of services, routes and the merged config', () => {
       const framework = buildFrameworkKongConfig(
         generateSecurityBasedServices(offersConfig()),
+        { tracesEndpoint: 'http://jaeger:4318/v1/traces', sampleRate: 1 },
       );
       const merged = mergeKongConfigs(framework, {
         services: [],

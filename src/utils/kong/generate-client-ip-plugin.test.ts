@@ -7,6 +7,7 @@ import {
   KONG_CLIENT_IP_HEADER,
   KONG_FRONTEND_TOKEN_HEADER,
   KONG_UPSTREAM_CLIENT_IP_HEADER,
+  KONG_CLIENT_TRACE_HEADERS,
 } from '../../constants';
 
 const PLUGIN_DIR = path.join(
@@ -28,6 +29,7 @@ describe('generateClientIpPlugin', () => {
           client_ip_header: 'X-Tsdevstack-Client-IP',
           token_header: 'X-Tsdevstack-Frontend-Token',
           real_ip_header: 'X-Tsdevstack-Real-IP',
+          trace_headers: ['traceparent', 'tracestate', 'baggage'],
         },
       });
     });
@@ -52,6 +54,15 @@ describe('generateClientIpPlugin', () => {
       );
       expect(schema).toContain(
         `real_ip_header = { type = "string", required = true, default = "${KONG_UPSTREAM_CLIENT_IP_HEADER}" }`,
+      );
+      expect(schema).toContain(
+        `default = { ${KONG_CLIENT_TRACE_HEADERS.map((h) => `"${h}"`).join(', ')} },`,
+      );
+    });
+
+    it('should drop trace headers unless the frontend token matches', () => {
+      expect(handler).toContain(
+        'if not frontend then\n    for _, name in ipairs(conf.trace_headers) do\n      kong.service.request.clear_header(name)',
       );
     });
 

@@ -7,7 +7,7 @@ describe('generatePrometheusService', () => {
 
     expect(result).toHaveProperty('prometheus');
     const service = result.prometheus;
-    expect(service.image).toBe('prom/prometheus:v2.47.0');
+    expect(service.image).toBe('prom/prometheus:v3.15.1');
     expect(service.restart).toBe('always');
     expect(service.networks).toEqual(['test-network']);
   });

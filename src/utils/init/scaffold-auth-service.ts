@@ -2,7 +2,8 @@
  * Scaffold auth-service from template into a new project
  *
  * Clones the auth-service template, replaces placeholders, resolves versions,
- * and registers the service in config.
+ * and registers the service and its worker in config. The worker processes
+ * the service's email queue (queue processors run only in workers).
  */
 
 import { join } from 'path';
@@ -62,7 +63,12 @@ export function scaffoldAuthService(
     hasDatabase: true,
     databaseType: 'postgresql',
   };
-  config.services.push(serviceConfig);
+  const workerConfig: FrameworkService = {
+    name: 'auth-worker',
+    type: 'worker',
+    baseService: 'auth-service',
+  };
+  config.services.push(serviceConfig, workerConfig);
 
   logger.success('auth-service scaffolded');
 }

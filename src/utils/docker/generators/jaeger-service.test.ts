@@ -7,7 +7,7 @@ describe('generateJaegerService', () => {
 
     expect(result).toHaveProperty('jaeger');
     const service = result.jaeger;
-    expect(service.image).toBe('jaegertracing/all-in-one:1.53');
+    expect(service.image).toBe('jaegertracing/jaeger:2.22.0');
     expect(service.restart).toBe('always');
     expect(service.networks).toEqual(['test-network']);
   });
@@ -18,17 +18,19 @@ describe('generateJaegerService', () => {
     expect(result.jaeger.ports).toEqual(['16686:16686', '4318:4318']);
   });
 
-  it('should enable OTLP collector', () => {
+  it('should need no setting for OTLP (on by default in Jaeger 2)', () => {
     const result = generateJaegerService('net');
-    const env = result.jaeger.environment as string[];
 
-    expect(env).toContain('COLLECTOR_OTLP_ENABLED=true');
+    expect(result.jaeger.environment).toBeUndefined();
   });
 
-  it('should include healthcheck', () => {
+  it("should check Jaeger 2's health endpoint", () => {
     const result = generateJaegerService('net');
 
-    expect(result.jaeger.healthcheck).toBeDefined();
+    expect(result.jaeger.healthcheck?.test).toEqual([
+      'CMD-SHELL',
+      'wget -q -O /dev/null http://127.0.0.1:13133/status || exit 1',
+    ]);
     expect(result.jaeger.healthcheck!.retries).toBe(3);
   });
 });

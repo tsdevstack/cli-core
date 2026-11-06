@@ -6,7 +6,9 @@
  * base service, but with a different entrypoint (dist/worker.js).
  *
  * This command only updates the framework config - it does NOT scaffold files.
- * User must manually create worker.ts, worker.module.ts, and processor files.
+ * User must manually create worker.ts, worker.module.ts, tsconfig.worker.json,
+ * the start-worker scripts and processor files. Queue processors run only in
+ * workers, and `npm run dev` starts every worker next to its service.
  *
  * Usage:
  *   npx tsdevstack register-detached-worker
@@ -150,7 +152,11 @@ export async function registerDetachedWorker(
     logger.info('You will need to create the following files:');
     logger.info(`  - apps/${baseServiceName}/src/worker.ts`);
     logger.info(`  - apps/${baseServiceName}/src/worker.module.ts`);
+    logger.info(`  - apps/${baseServiceName}/tsconfig.worker.json`);
     logger.info('  - Processor files in src/processors/');
+    logger.info(
+      `And the scripts "start-worker" and "start-worker:dev" in apps/${baseServiceName}/package.json.`,
+    );
     logger.newline();
   }
 
@@ -178,7 +184,7 @@ export async function registerDetachedWorker(
   logger.info('Next steps:');
   if (!workerExists) {
     logger.info(
-      '  1. Create worker.ts and worker.module.ts (see Phase 20 docs)',
+      '  1. Create the worker files and scripts listed above (auth-service in the auth template has them)',
     );
     logger.info('  2. Commit your changes');
     logger.info(

@@ -20,6 +20,12 @@
 -- address Kong resolved. tsdevstack-strip-identity removes a client-sent
 -- value of it first (priority 50000).
 --
+-- Trace headers (trace_headers: traceparent, tracestate, baggage) are
+-- removed from every request without the frontend token, so outside clients
+-- cannot pick trace IDs or force sampling; the frontend's stay, and its
+-- trace continues through Kong. The opentelemetry plugin (priority 14, same
+-- phase) reads them after this plugin.
+--
 -- PRIORITY 950 (access phase): after the auth plugins (oidc 1000, key-auth
 -- 1250, jwt 1450), so their credential wins; before rate-limiting (910),
 -- which reads the credential.
@@ -60,21 +66,30 @@ local function is_ip(value)
     and (find(value, ".", 1, true) ~= nil or find(value, ":", 1, true) ~= nil)
 end
 
--- The visitor's address when a trusted frontend named one, else nil
-local function trusted_visitor(conf)
+-- Whether the request carries the frontend token
+local function from_frontend(conf)
   local token = kong.request.get_header(conf.token_header)
+  return type(token) == "string" and equals(token, conf.frontend_token)
+end
+
+-- The visitor's address when the frontend named one, else nil
+local function trusted_visitor(conf, frontend)
   local client_ip = kong.request.get_header(conf.client_ip_header)
-  if type(token) ~= "string" or type(client_ip) ~= "string" then
-    return nil
-  end
-  if not equals(token, conf.frontend_token) or not is_ip(client_ip) then
+  if not frontend or type(client_ip) ~= "string" or not is_ip(client_ip) then
     return nil
   end
   return client_ip
 end
 
 function ClientIpHandler:access(conf)
-  local visitor = trusted_visitor(conf)
+  local frontend = from_frontend(conf)
+  local visitor = trusted_visitor(conf, frontend)
+
+  if not frontend then
+    for _, name in ipairs(conf.trace_headers) do
+      kong.service.request.clear_header(name)
+    end
+  end
 
   kong.service.request.clear_header(conf.token_header)
   kong.service.request.clear_header(conf.client_ip_header)

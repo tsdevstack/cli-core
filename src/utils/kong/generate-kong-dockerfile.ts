@@ -9,6 +9,7 @@
 
 import {
   KONG_BASE_IMAGE,
+  KONG_TRACING_INSTRUMENTATIONS,
   KONG_DECLARATIVE_DIR,
   KONG_OIDC_PLUGIN_NAME,
   KONG_OIDC_V3_COMMIT,
@@ -92,6 +93,10 @@ ENV KONG_ADMIN_LISTEN="off"
 
 # Status API for health checks (internal port)
 ENV KONG_STATUS_LISTEN="0.0.0.0:8100"
+
+# Tracing (off by default in Kong): a span per request and per upstream
+# try, sent by the opentelemetry plugin (its sampling_rate decides)
+ENV KONG_TRACING_INSTRUMENTATIONS=${KONG_TRACING_INSTRUMENTATIONS}
 
 # Logging
 ENV KONG_PROXY_ACCESS_LOG=/dev/stdout

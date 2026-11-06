@@ -228,6 +228,39 @@ export const KONG_FRONTEND_TOKEN_SECRET = 'KONG_FRONTEND_TOKEN';
 export const KONG_UPSTREAM_CLIENT_IP_HEADER = 'X-Tsdevstack-Real-IP';
 
 /**
+ * Kong's bundled OpenTelemetry plugin, a framework global plugin: Kong's
+ * spans, and the trace passed on to the services (W3C traceparent)
+ */
+export const KONG_OPENTELEMETRY_PLUGIN_NAME = 'opentelemetry';
+
+/** Where Kong sends its spans locally: Jaeger on the docker-compose network */
+export const KONG_LOCAL_TRACES_ENDPOINT = 'http://jaeger:4318/v1/traces';
+
+/**
+ * Where Kong sends its spans in the cloud: the OpenTelemetry Collector
+ * sidecar next to it, which signs and forwards them (Cloud Run, ECS task,
+ * App Service share localhost between the two containers)
+ */
+export const KONG_CLOUD_TRACES_ENDPOINT = 'http://localhost:4318/v1/traces';
+
+/**
+ * Kong's tracing switch (kong.conf tracing_instrumentations, off by
+ * default): a span per request and one per upstream try
+ */
+export const KONG_TRACING_INSTRUMENTATIONS = 'request,balancer';
+
+/**
+ * Trace headers Kong drops from requests that do not carry the frontend
+ * token (tsdevstack-client-ip), so outside clients cannot pick trace IDs or
+ * force sampling. Calls from the frontend keep them: its trace continues.
+ */
+export const KONG_CLIENT_TRACE_HEADERS = [
+  'traceparent',
+  'tracestate',
+  'baggage',
+] as const;
+
+/**
  * Framework plugin on each partner service that removes the public partner
  * prefix from the upstream path. Source: templates/kong-plugins/tsdevstack-api-prefix.
  */

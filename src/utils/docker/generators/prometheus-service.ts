@@ -5,11 +5,11 @@
 import type { DockerComposeServices } from '../types';
 
 export function generatePrometheusService(
-  networkName: string
+  networkName: string,
 ): DockerComposeServices {
   return {
     prometheus: {
-      image: 'prom/prometheus:v2.47.0',
+      image: 'prom/prometheus:v3.15.1',
       restart: 'always',
       ports: ['9090:9090'],
       volumes: [
@@ -22,7 +22,13 @@ export function generatePrometheusService(
       ],
       networks: [networkName],
       healthcheck: {
-        test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:9090/-/healthy'],
+        test: [
+          'CMD',
+          'wget',
+          '-q',
+          '--spider',
+          'http://localhost:9090/-/healthy',
+        ],
         interval: '10s',
         timeout: '5s',
         retries: 3,

@@ -137,8 +137,13 @@ function generateKongConfig(): KongTemplate {
     oidcDiscoveryUrl: '${OIDC_DISCOVERY_URL}',
   });
 
+  // No collector here: Kong's span export fails quietly, the propagation
+  // under test does not depend on it
   const merged = mergeKongConfigs(
-    buildFrameworkKongConfig(services),
+    buildFrameworkKongConfig(services, {
+      tracesEndpoint: 'http://127.0.0.1:4318/v1/traces',
+      sampleRate: 1,
+    }),
     userConfig,
   );
 
@@ -570,6 +575,80 @@ describe.skipIf(!dockerAvailable)(
             [200, MINUTE_LIMIT - 2],
             [200, MINUTE_LIMIT - 3],
           ]);
+        },
+        TEST_TIMEOUT_MS,
+      );
+    });
+
+    describe('trace headers', () => {
+      const CLIENT_TRACE_ID = '5759e988bd862e3fe1be46a994272793';
+      const CLIENT_TRACEPARENT = `00-${CLIENT_TRACE_ID}-53995c3f42cd8ad8-01`;
+
+      /** The trace headers the echo upstream (the backend) received */
+      function backendTrace(reply: Reply): {
+        traceId: string | undefined;
+        tracestate: string | undefined;
+        baggage: string | undefined;
+      } {
+        const received = JSON.parse(reply.body) as {
+          headers: Record<string, string | undefined>;
+        };
+        return {
+          traceId: received.headers.traceparent?.split('-')[1],
+          tracestate: received.headers.tracestate,
+          baggage: received.headers.baggage,
+        };
+      }
+
+      const clientTraceHeaders = {
+        traceparent: CLIENT_TRACEPARENT,
+        tracestate: 'vendor=client',
+        baggage: 'user=client',
+      };
+
+      it(
+        "should drop an outside client's trace headers and start Kong's own trace",
+        async () => {
+          const reply = await send(PUBLIC_PATH, randomIp(), clientTraceHeaders);
+
+          expect(reply.status).toBe(200);
+          const trace = backendTrace(reply);
+          expect(trace.traceId).toMatch(/^[0-9a-f]{32}$/);
+          expect(trace.traceId).not.toBe(CLIENT_TRACE_ID);
+          expect(trace.tracestate).toBeUndefined();
+          expect(trace.baggage).toBeUndefined();
+        },
+        TEST_TIMEOUT_MS,
+      );
+
+      it(
+        "should continue the frontend's trace, with or without a visitor address",
+        async () => {
+          const withVisitor = await send(PUBLIC_PATH, randomIp(), {
+            ...asFrontend(randomIp()),
+            ...clientTraceHeaders,
+          });
+          // Locally the frontend sends its token without an address
+          const tokenOnly = await send(PUBLIC_PATH, randomIp(), {
+            [KONG_FRONTEND_TOKEN_HEADER]: FRONTEND_TOKEN,
+            ...clientTraceHeaders,
+          });
+
+          expect(backendTrace(withVisitor).traceId).toBe(CLIENT_TRACE_ID);
+          expect(backendTrace(tokenOnly).traceId).toBe(CLIENT_TRACE_ID);
+        },
+        TEST_TIMEOUT_MS,
+      );
+
+      it(
+        'should drop the trace headers when the frontend token is wrong',
+        async () => {
+          const reply = await send(PUBLIC_PATH, randomIp(), {
+            ...asFrontend(randomIp(), 'wrong-token'),
+            ...clientTraceHeaders,
+          });
+
+          expect(backendTrace(reply).traceId).not.toBe(CLIENT_TRACE_ID);
         },
         TEST_TIMEOUT_MS,
       );

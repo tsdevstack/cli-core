@@ -98,7 +98,7 @@ describe('scaffoldAuthService', () => {
     it('should register auth-service in config with correct properties', () => {
       scaffoldAuthService('/fake/project', config);
 
-      expect(config.services).toHaveLength(1);
+      expect(config.services).toHaveLength(2);
       expect(config.services[0]).toEqual({
         name: 'auth-service',
         type: 'nestjs',
@@ -106,6 +106,16 @@ describe('scaffoldAuthService', () => {
         globalPrefix: 'auth',
         hasDatabase: true,
         databaseType: 'postgresql',
+      });
+    });
+
+    it('should register the worker that processes its email queue', () => {
+      scaffoldAuthService('/fake/project', config);
+
+      expect(config.services[1]).toEqual({
+        name: 'auth-worker',
+        type: 'worker',
+        baseService: 'auth-service',
       });
     });
   });
@@ -121,7 +131,7 @@ describe('scaffoldAuthService', () => {
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Could not resolve'),
       );
-      expect(config.services).toHaveLength(1);
+      expect(config.services).toHaveLength(2);
     });
   });
 });

@@ -110,6 +110,27 @@ export interface ClientIpPluginConfig {
     client_ip_header: string;
     token_header: string;
     real_ip_header: string;
+    /** Dropped unless the frontend token matches */
+    trace_headers: string[];
+  };
+}
+
+/**
+ * Kong's bundled opentelemetry plugin configuration (the fields we set)
+ */
+export interface OpenTelemetryPluginConfig {
+  name: 'opentelemetry';
+  config: {
+    /** OTLP/HTTP traces URL: Jaeger locally, the collector sidecar in the cloud */
+    traces_endpoint: string;
+    /** Share of new traces kept (tracing.sampleRate) */
+    sampling_rate: number;
+    resource_attributes: Record<string, string>;
+    propagation: {
+      extract: string[];
+      inject: string[];
+      default_format: string;
+    };
   };
 }
 

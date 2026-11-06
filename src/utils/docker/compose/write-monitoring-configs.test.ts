@@ -132,6 +132,17 @@ describe('writeMonitoringConfigs', () => {
       );
     });
 
+    it('should provision the dashboards into a named folder', () => {
+      writeMonitoringConfigs('/root', makeConfig());
+
+      expect(mockWriteYamlFile).toHaveBeenCalledWith(
+        expect.stringContaining('provisioning/dashboards/dashboard.yml'),
+        expect.objectContaining({
+          providers: [expect.objectContaining({ folder: 'tsdevstack' })],
+        }),
+      );
+    });
+
     it('should write services dashboard JSON', () => {
       writeMonitoringConfigs('/root', makeConfig());
 
