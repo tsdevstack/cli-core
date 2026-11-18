@@ -5,10 +5,12 @@
  * as a separate Cloud Run container using the same Docker image as its
  * base service, but with a different entrypoint (dist/worker.js).
  *
- * This command only updates the framework config - it does NOT scaffold files.
- * User must manually create worker.ts, worker.module.ts, tsconfig.worker.json,
- * the start-worker scripts and processor files. Queue processors run only in
- * workers, and `npm run dev` starts every worker next to its service.
+ * It also creates whichever of the base service's src/worker.ts,
+ * src/worker.module.ts and tsconfig.worker.json are missing, and the
+ * start-worker and start-worker:dev scripts; it never overwrites anything and
+ * lists what it created and what it left alone. The processors are the
+ * user's. Queue processors run only in workers, and `npm run dev` starts
+ * every worker next to its service.
  *
  * Usage:
  *   npx tsdevstack register-detached-worker
@@ -23,6 +25,7 @@ import { loadFrameworkConfig, saveFrameworkConfig } from '../utils/config';
 import { findProjectRoot } from '../utils/paths';
 import { CliError } from '../utils/errors';
 import { validateServiceName } from '../utils/validation/validate-service-name';
+import { addWorkerScripts, scaffoldWorkerFiles } from '../utils/workers';
 
 export interface RegisterDetachedWorkerOptions {
   name?: string;
@@ -134,31 +137,19 @@ export async function registerDetachedWorker(
     );
   }
 
-  // Check if worker.ts exists (optional warning)
-  const workerFilePath = path.join(
-    projectRoot,
-    'apps',
-    baseServiceName,
-    'src',
-    'worker.ts',
-  );
-  const workerExists = fs.existsSync(workerFilePath);
-
-  if (!workerExists) {
-    logger.newline();
-    logger.warn('Note: worker.ts not found at:');
-    logger.warn(`  apps/${baseServiceName}/src/worker.ts`);
-    logger.newline();
-    logger.info('You will need to create the following files:');
-    logger.info(`  - apps/${baseServiceName}/src/worker.ts`);
-    logger.info(`  - apps/${baseServiceName}/src/worker.module.ts`);
-    logger.info(`  - apps/${baseServiceName}/tsconfig.worker.json`);
-    logger.info('  - Processor files in src/processors/');
-    logger.info(
-      `And the scripts "start-worker" and "start-worker:dev" in apps/${baseServiceName}/package.json.`,
+  // The worker's files and scripts in the base service: whatever is missing
+  // is created, nothing that is there is overwritten
+  const serviceDir = path.join(projectRoot, 'apps', baseServiceName);
+  const packageJsonPath = path.join(serviceDir, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    throw new CliError(
+      `apps/${baseServiceName}/package.json not found`,
+      'register-detached-worker',
+      `The worker's files go in its base service's folder, apps/${baseServiceName}`,
     );
-    logger.newline();
   }
+  const files = scaffoldWorkerFiles(serviceDir);
+  const scripts = addWorkerScripts(packageJsonPath);
 
   // Add worker to config
   const workerEntry = {
@@ -181,23 +172,38 @@ export async function registerDetachedWorker(
   logger.info(JSON.stringify(workerEntry, null, 2));
   logger.newline();
 
-  logger.info('Next steps:');
-  if (!workerExists) {
-    logger.info(
-      '  1. Create the worker files and scripts listed above (auth-service in the auth template has them)',
-    );
-    logger.info('  2. Commit your changes');
-    logger.info(
-      '  3. Deploy the service: npx tsdevstack infra:deploy-services --service ' +
-        baseServiceName,
-    );
-  } else {
-    logger.info('  1. Commit your changes');
-    logger.info(
-      '  2. Deploy the service: npx tsdevstack infra:deploy-services --service ' +
-        baseServiceName,
-    );
+  const created = [
+    ...files.created,
+    ...scripts.added.map((name) => `package.json script "${name}"`),
+  ];
+  const kept = [
+    ...files.kept,
+    ...scripts.kept.map((name) => `package.json script "${name}"`),
+  ];
+  if (created.length > 0) {
+    logger.info(`Created in apps/${baseServiceName}:`);
+    for (const item of created) {
+      logger.info(`  ${item}`);
+    }
+    logger.newline();
   }
+  if (kept.length > 0) {
+    logger.info(`Already in apps/${baseServiceName}, left as they are:`);
+    for (const item of kept) {
+      logger.info(`  ${item}`);
+    }
+    logger.newline();
+  }
+
+  logger.info('Next steps:');
+  logger.info(
+    `  1. Add a processor: register its queue in apps/${baseServiceName}/src/worker.module.ts and add the class to providers`,
+  );
+  logger.info('  2. Commit your changes');
+  logger.info(
+    '  3. Deploy the service: npx tsdevstack infra:deploy-services --service ' +
+      baseServiceName,
+  );
   logger.newline();
 }
 

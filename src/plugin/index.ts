@@ -32,6 +32,8 @@ export type {
   GCPClientOptions,
   AWSCredentials,
   AzureCredentials,
+  AzureNamingScheme,
+  AzureNaming,
   // OpenAPI types
   RouteSecurityInfo,
   SecurityType,

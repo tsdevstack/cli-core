@@ -114,7 +114,7 @@ npx tsdevstack infra:deploy --env dev
 | `infra:destroy`       | Tear down all infrastructure for an environment        |
 | `infra:status`        | Check infrastructure status                            |
 | `infra:list-deployed` | List deployed services with versions                   |
-| `infra:logs`          | Read the logs of a deployed environment                |
+| `infra:logs`          | Read or follow the logs of a deployed environment      |
 
 ### Service deployment
 
@@ -141,10 +141,11 @@ npx tsdevstack infra:deploy --env dev
 
 Migrations run automatically as part of service deployment. These commands are for manual inspection and ad-hoc runs.
 
-| Command                 | Description              |
-| ----------------------- | ------------------------ |
-| `infra:plan-db-migrate` | Show pending migrations  |
-| `infra:run-db-migrate`  | Apply pending migrations |
+| Command                  | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `infra:plan-db-migrate`  | Show pending migrations                      |
+| `infra:run-db-migrate`   | Apply pending migrations                     |
+| `infra:restore-database` | Restore the database a service removal saved |
 
 ### Scheduled jobs
 
@@ -170,7 +171,8 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 | --- | --- | --- |
 | [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI: project scaffolding, infrastructure generation, deployment |
 | [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules: auth, secrets, storage, messaging, observability |
-| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 57 tools |
+| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 58 tools |
+| [`@tsdevstack/telemetry`](https://www.npmjs.com/package/@tsdevstack/telemetry) | Apache-2.0 | Traces for the services and Next.js frontends, sent to each cloud's trace service |
 | [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection: behavioral analysis + honeypot |
 
 The infrastructure and cloud logic is licensed Apache-2.0 and source-available in the tsdevstack GitHub organization. It is bundled into the CLI rather than published to npm:

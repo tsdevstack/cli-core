@@ -9,16 +9,27 @@
 import { createAzureCredential } from './create-azure-credential';
 import { KeyVaultManagementClient } from '@azure/arm-keyvault';
 import type { VaultCreateOrUpdateParameters } from '@azure/arm-keyvault';
-import { buildKeyVaultName } from './build-key-vault-name';
+import { resolveKeyVaultName } from './resolve-key-vault-name';
 import { isSoftDeletedVaultConflict } from './is-soft-deleted-vault-conflict';
 import { SHARED_SECRET_SCOPE } from '../../../constants';
 import type { AzureCredentials } from '../types';
+
+interface EnsureKeyVaultResult {
+  exists: boolean;
+  created: boolean;
+  error?: string;
+}
+
+/** Checks and creates running now, by subscription, project, env and scope */
+const pendingVaults = new Map<string, Promise<EnsureKeyVaultResult>>();
 
 /**
  * Ensure the Key Vault of a secret scope exists: the shared vault (created
  * by cloud:init), or a service's own vault (created on the first write to
  * its scope, and by infra:deploy). A vault deleted within its soft-delete
  * retention is recovered, since its name stays reserved until then.
+ * Calls made while the same vault's check or create runs share it: one
+ * create per vault, and only the first caller reports created.
  *
  * @param projectName - Project name
  * @param env - Environment
@@ -31,86 +42,117 @@ export async function ensureKeyVaultExists(
   env: string,
   azureCredentials: AzureCredentials,
   scope?: string,
-): Promise<{ exists: boolean; created: boolean; error?: string }> {
+): Promise<EnsureKeyVaultResult> {
+  // Calls for a vault whose check or create is already running wait for it
+  // (cloud-secrets:push writes a scope's secrets in parallel: separate
+  // creates of one new vault raced, and one failed with "not found")
+  const key = [
+    azureCredentials.subscriptionId,
+    projectName,
+    env,
+    scope ?? SHARED_SECRET_SCOPE,
+  ].join('/');
+  const running = pendingVaults.get(key);
+  if (running) {
+    return { ...(await running), created: false };
+  }
+
+  const run = (async (): Promise<EnsureKeyVaultResult> => {
+    try {
+      const resourceGroupName = `${projectName}-${env}-rg`;
+      const keyVaultName = await resolveKeyVaultName(
+        azureCredentials,
+        projectName,
+        env,
+        scope,
+      );
+      const location = azureCredentials.location;
+
+      const credential = createAzureCredential(azureCredentials);
+      const kvManagementClient = new KeyVaultManagementClient(
+        credential,
+        azureCredentials.subscriptionId,
+      );
+
+      // Check if Key Vault already exists
+      try {
+        await kvManagementClient.vaults.get(resourceGroupName, keyVaultName);
+        return { exists: true, created: false };
+      } catch (error: unknown) {
+        const statusCode = (error as { statusCode?: number }).statusCode;
+        if (statusCode !== 404) {
+          throw error;
+        }
+      }
+
+      // Create Key Vault with RBAC authorization
+      const vaultParameters: VaultCreateOrUpdateParameters = {
+        location,
+        properties: {
+          sku: {
+            family: 'A' as const,
+            name: 'standard' as const,
+          },
+          tenantId: azureCredentials.tenantId,
+          accessPolicies: [],
+          enabledForDeployment: false,
+          enabledForDiskEncryption: false,
+          enabledForTemplateDeployment: false,
+          enableSoftDelete: true,
+          softDeleteRetentionInDays: 90,
+          enableRbacAuthorization: true,
+        },
+        tags: {
+          'managed-by': 'tsdevstack',
+          project: projectName,
+          environment: env,
+          scope: scope ?? SHARED_SECRET_SCOPE,
+        },
+      };
+
+      try {
+        await kvManagementClient.vaults.beginCreateOrUpdateAndWait(
+          resourceGroupName,
+          keyVaultName,
+          vaultParameters,
+        );
+      } catch (error: unknown) {
+        // A soft-deleted vault keeps its name reserved: recover it instead.
+        // Looking it up first (vaults.getDeleted) needs a subscription-level
+        // permission; the deployer's roles are on the resource group only.
+        if (!isSoftDeletedVaultConflict(error)) {
+          throw error;
+        }
+        await kvManagementClient.vaults.beginCreateOrUpdateAndWait(
+          resourceGroupName,
+          keyVaultName,
+          {
+            ...vaultParameters,
+            properties: {
+              ...vaultParameters.properties,
+              createMode: 'recover',
+            },
+          },
+        );
+      }
+
+      return { exists: true, created: true };
+    } catch (error: unknown) {
+      return {
+        exists: false,
+        created: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error creating Key Vault',
+      };
+    }
+  })();
+
+  pendingVaults.set(key, run);
   try {
-    const resourceGroupName = `${projectName}-${env}-rg`;
-    const keyVaultName = buildKeyVaultName(projectName, env, scope);
-    const location = azureCredentials.location;
-
-    const credential = createAzureCredential(azureCredentials);
-    const kvManagementClient = new KeyVaultManagementClient(
-      credential,
-      azureCredentials.subscriptionId,
-    );
-
-    // Check if Key Vault already exists
-    try {
-      await kvManagementClient.vaults.get(resourceGroupName, keyVaultName);
-      return { exists: true, created: false };
-    } catch (error: unknown) {
-      const statusCode = (error as { statusCode?: number }).statusCode;
-      if (statusCode !== 404) {
-        throw error;
-      }
-    }
-
-    // Create Key Vault with RBAC authorization
-    const vaultParameters: VaultCreateOrUpdateParameters = {
-      location,
-      properties: {
-        sku: {
-          family: 'A' as const,
-          name: 'standard' as const,
-        },
-        tenantId: azureCredentials.tenantId,
-        accessPolicies: [],
-        enabledForDeployment: false,
-        enabledForDiskEncryption: false,
-        enabledForTemplateDeployment: false,
-        enableSoftDelete: true,
-        softDeleteRetentionInDays: 90,
-        enableRbacAuthorization: true,
-      },
-      tags: {
-        'managed-by': 'tsdevstack',
-        project: projectName,
-        environment: env,
-        scope: scope ?? SHARED_SECRET_SCOPE,
-      },
-    };
-
-    try {
-      await kvManagementClient.vaults.beginCreateOrUpdateAndWait(
-        resourceGroupName,
-        keyVaultName,
-        vaultParameters,
-      );
-    } catch (error: unknown) {
-      // A soft-deleted vault keeps its name reserved: recover it instead.
-      // Looking it up first (vaults.getDeleted) needs a subscription-level
-      // permission; the deployer's roles are on the resource group only.
-      if (!isSoftDeletedVaultConflict(error)) {
-        throw error;
-      }
-      await kvManagementClient.vaults.beginCreateOrUpdateAndWait(
-        resourceGroupName,
-        keyVaultName,
-        {
-          ...vaultParameters,
-          properties: { ...vaultParameters.properties, createMode: 'recover' },
-        },
-      );
-    }
-
-    return { exists: true, created: true };
-  } catch (error: unknown) {
-    return {
-      exists: false,
-      created: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unknown error creating Key Vault',
-    };
+    return await run;
+  } finally {
+    pendingVaults.delete(key);
   }
 }

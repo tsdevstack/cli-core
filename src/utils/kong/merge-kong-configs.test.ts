@@ -397,6 +397,30 @@ describe('mergeKongConfigs', () => {
 
       expect(() => mergeKongConfigs(framework, user)).not.toThrow();
     });
+
+    it("should refuse Kong's bundled opentelemetry plugin next to the framework's tracing plugin", () => {
+      const traced: KongTemplate = {
+        services: [],
+        plugins: [{ name: 'tsdevstack-opentelemetry', config: {} }],
+      };
+      const user: KongTemplate = {
+        services: [],
+        plugins: [{ name: 'opentelemetry', config: {} }],
+      };
+
+      expect(() => mergeKongConfigs(traced, user)).toThrow(
+        'kong.user.yml declares global plugin(s) that tsdevstack already generates: opentelemetry',
+      );
+    });
+
+    it('should allow the bundled opentelemetry plugin when the framework config has no tracing plugin', () => {
+      const user: KongTemplate = {
+        services: [],
+        plugins: [{ name: 'opentelemetry', config: {} }],
+      };
+
+      expect(() => mergeKongConfigs(framework, user)).not.toThrow();
+    });
   });
 
   describe('Real-world scenario', () => {

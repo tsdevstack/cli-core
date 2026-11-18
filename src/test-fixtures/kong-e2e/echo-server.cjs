@@ -6,6 +6,9 @@
 //   an in-memory key, accepted by kong-oidc-v3 (client_id kong).
 // - GET /oidc-hits -> how often the discovery document and the JWKS were
 //   served ({ discovery, jwks }), to check that Kong caches them.
+// - POST /v1/traces: Kong's span export (OTLP/HTTP, uncompressed protobuf),
+//   answered 200 and kept; GET /exported-traces -> the bodies, hex-encoded,
+//   to look for a trace ID in them.
 const http = require('http');
 const crypto = require('crypto');
 
@@ -21,6 +24,7 @@ const jwk = {
 };
 const b64u = (b) => Buffer.from(b).toString('base64url');
 const oidcHits = { discovery: 0, jwks: 0 };
+const exportedTraces = [];
 
 function mint(q) {
   const now = Math.floor(Date.now() / 1000);
@@ -61,6 +65,17 @@ http
       return json({ keys: [jwk] });
     }
     if (u.pathname === '/oidc-hits') return json(oidcHits);
+    if (req.method === 'POST' && u.pathname === '/v1/traces') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        exportedTraces.push(Buffer.concat(chunks).toString('hex'));
+        res.writeHead(200, { 'content-type': 'application/x-protobuf' });
+        res.end();
+      });
+      return;
+    }
+    if (u.pathname === '/exported-traces') return json(exportedTraces);
     if (u.pathname === '/mint') {
       res.writeHead(200, { 'content-type': 'text/plain' });
       return res.end(mint(u.searchParams));

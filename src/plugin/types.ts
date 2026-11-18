@@ -42,6 +42,8 @@ export type {
   GCPClientOptions,
   AWSCredentials,
   AzureCredentials,
+  AzureNamingScheme,
+  AzureNaming,
 } from '../utils/cloud/types';
 
 // Re-export OpenAPI types

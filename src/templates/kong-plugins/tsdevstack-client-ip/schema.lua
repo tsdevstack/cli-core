@@ -24,7 +24,7 @@ return {
               type = "array",
               required = true,
               elements = { type = "string" },
-              default = { "traceparent", "tracestate", "baggage" },
+              default = { "traceparent", "tracestate", "baggage", "X-Tsdevstack-Traceparent" },
           } },
         },
       },

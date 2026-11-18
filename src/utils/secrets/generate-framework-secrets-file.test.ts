@@ -364,7 +364,7 @@ describe('generateFrameworkSecretsFile', () => {
   });
 
   describe('Database secrets', () => {
-    it('should generate DATABASE_URL for service with database', () => {
+    it("should give the running service the app role's URL and migrations the owner's", () => {
       const config = createMockFrameworkConfig({
         services: [
           {
@@ -380,11 +380,41 @@ describe('generateFrameworkSecretsFile', () => {
 
       const authService = result['auth-service'] as Record<string, unknown>;
       expect(authService.DATABASE_URL).toBe(
+        'postgresql://auth-service_app:mocked-base64-secret@localhost:5432/auth-service',
+      );
+      expect(authService.MIGRATION_DATABASE_URL).toBe(
         'postgresql://db-user:db-password@localhost:5432/db-name',
       );
       expect(
         generateDatabaseSecretsModule.generateDatabaseSecrets,
       ).toHaveBeenCalledWith('auth-service', 5432, undefined, undefined);
+    });
+
+    it("should keep the app role's password from the existing DATABASE_URL", () => {
+      const config = createMockFrameworkConfig({
+        services: [
+          {
+            name: 'auth-service',
+            type: 'nestjs',
+            port: 3001,
+            hasDatabase: true,
+          },
+        ],
+      });
+      const existing = {
+        secrets: {},
+        'auth-service': {
+          DATABASE_URL:
+            'postgresql://auth-service_app:kept-password@localhost:5432/auth-service',
+        },
+      };
+
+      const result = generateFrameworkSecretsFile(config, existing);
+
+      const authService = result['auth-service'] as Record<string, unknown>;
+      expect(authService.DATABASE_URL).toBe(
+        'postgresql://auth-service_app:kept-password@localhost:5432/auth-service',
+      );
     });
 
     it('should use custom databasePort if provided', () => {

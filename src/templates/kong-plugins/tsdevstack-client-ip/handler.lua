@@ -20,7 +20,8 @@
 -- address Kong resolved. tsdevstack-strip-identity removes a client-sent
 -- value of it first (priority 50000).
 --
--- Trace headers (trace_headers: traceparent, tracestate, baggage) are
+-- Trace headers (trace_headers: traceparent, tracestate, baggage and
+-- X-Tsdevstack-Traceparent, the copy of traceparent) are
 -- removed from every request without the frontend token, so outside clients
 -- cannot pick trace IDs or force sampling; the frontend's stay, and its
 -- trace continues through Kong. The opentelemetry plugin (priority 14, same

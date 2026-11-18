@@ -9,6 +9,8 @@
  * 3. Generates OpenAPI docs for NestJS services (needed by Kong)
  * 4. Regenerates kong.yaml
  * 5a. Starts critical infrastructure (DBs, Redis) and waits for health
+ * 5c. Sets up each database's two roles: the owner (migrations) and the app
+ *     role the service connects as (db-init SQL, same as the clouds)
  * 5b. Starts remaining containers (gateway, pgAdmin, user services) without waiting
  * 6. Recreates pgAdmin (without waiting) to reload configs and clear cache
  * 7. Runs Prisma migrations + generate for all services
@@ -29,10 +31,11 @@ import { loadFrameworkConfig } from '../utils/config';
 import { logger, printInfrastructureUrls } from '../utils/logger';
 import {
   hasPrismaSchema,
-  getDatabaseUrl,
+  getMigrationDatabaseUrl,
   deployPrismaMigration,
   generatePrismaClient,
 } from '../utils/prisma';
+import { runLocalDbInit } from '../utils/database';
 import { findProjectRoot } from '../utils/paths/find-project-root';
 import { OperationContext } from '../utils/types/operation-context';
 
@@ -90,6 +93,20 @@ export function sync(context?: OperationContext): void {
   recreateContainers(criticalServices, rootDir, true);
   logger.success('Critical infrastructure ready');
 
+  // Step 5c: Database roles (before the migrations and the services)
+  const servicesWithDb = config.services.filter(
+    (service) => service.hasDatabase,
+  );
+  if (servicesWithDb.length > 0) {
+    logger.newline();
+    logger.updating('Setting up database users...');
+    runLocalDbInit(
+      rootDir,
+      servicesWithDb.map((service) => service.name),
+    );
+    logger.success('Database users ready');
+  }
+
   // Step 5b: Start all other containers (gateway, pgAdmin, user services) without waiting
   logger.newline();
   logger.updating('Starting remaining containers...');
@@ -114,12 +131,10 @@ export function sync(context?: OperationContext): void {
     logger.info('   No services with Prisma schemas found');
   } else {
     for (const service of servicesWithPrisma) {
-      const databaseUrl = getDatabaseUrl(service.name);
+      const databaseUrl = getMigrationDatabaseUrl(service.name);
 
       if (!databaseUrl) {
-        logger.warn(
-          `   Skipping ${service.name}: DATABASE_URL not found in secrets`,
-        );
+        logger.warn(`   Skipping ${service.name}: no database URL in secrets`);
         continue;
       }
 

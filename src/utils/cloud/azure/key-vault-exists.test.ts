@@ -7,6 +7,11 @@ rs.mock('./create-azure-credential', () => ({
   createAzureCredential: rs.fn(() => ({})),
 }));
 
+// The environment's scheme is checked once per command (its own test)
+rs.mock('./resolve-azure-naming-scheme', () => ({
+  resolveAzureNamingScheme: rs.fn(async () => 'legacy'),
+}));
+
 rs.mock('@azure/arm-keyvault', () => ({
   KeyVaultManagementClient: class {
     vaults = { get: mockVaultsGet };

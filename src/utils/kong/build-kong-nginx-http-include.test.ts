@@ -4,8 +4,16 @@ import { buildKongNginxHttpInclude } from './build-kong-nginx-http-include';
 describe('buildKongNginxHttpInclude', () => {
   describe('Standard use cases', () => {
     it('should write the discovery and jwks shared dicts into the include file', () => {
+      const result = buildKongNginxHttpInclude();
+      expect(result).toContain(
+        "RUN printf '%s\\n' 'lua_shared_dict discovery 1m;' 'lua_shared_dict jwks 1m;'",
+      );
+      expect(result).toMatch(/> \/etc\/kong\/tsdevstack-nginx-http\.conf$/m);
+    });
+
+    it("should leave the load balancers' probes answered 200 out of the access log", () => {
       expect(buildKongNginxHttpInclude()).toContain(
-        "RUN printf '%s\\n' 'lua_shared_dict discovery 1m;' 'lua_shared_dict jwks 1m;' > /etc/kong/tsdevstack-nginx-http.conf",
+        `'map "$uri:$status" $tsdevstack_access_log {' '    /health:200 0;' '    /status:200 0;' '    default 1;' '}' >`,
       );
     });
 

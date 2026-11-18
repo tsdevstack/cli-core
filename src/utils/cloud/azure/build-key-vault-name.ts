@@ -3,6 +3,8 @@
  */
 
 import { createHash } from 'crypto';
+import { buildAccountSuffix } from '../build-account-suffix';
+import type { AzureNaming } from '../types';
 import {
   AZURE_KEY_VAULT_NAME_HASH_LENGTH,
   AZURE_KEY_VAULT_NAME_MAX_LENGTH,
@@ -18,22 +20,32 @@ import {
  * unique and the same everywhere it is computed (cloud-secrets, deploy,
  * Terraform, the runtime env vars).
  *
+ * Key Vault names are unique across Azure. Environments with unique names
+ * (resolveAzureNamingScheme) add the subscription's account suffix:
+ * `{project}-{env}-kv-{suffix}`, `{project}-{env}-{service}-{suffix}`.
+ *
  * Key Vault names allow letters, digits and single hyphens, start with a
  * letter and end with a letter or digit.
  *
  * @param projectName - Project name from config.json
  * @param env - Environment (dev, staging, prod, ...)
+ * @param naming - The environment's scheme and subscription ID
  * @param scope - 'shared' (default) or a service name
  * @returns The vault name
  */
 export function buildKeyVaultName(
   projectName: string,
   env: string,
+  naming: AzureNaming,
   scope: string = SHARED_SECRET_SCOPE,
 ): string {
-  const suffix =
+  const scopePart =
     scope === SHARED_SECRET_SCOPE ? AZURE_SHARED_KEY_VAULT_SUFFIX : scope;
-  const name = `${projectName}-${env}-${suffix}`
+  const accountPart =
+    naming.scheme === 'unique'
+      ? `-${buildAccountSuffix(naming.subscriptionId)}`
+      : '';
+  const name = `${projectName}-${env}-${scopePart}${accountPart}`
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-');

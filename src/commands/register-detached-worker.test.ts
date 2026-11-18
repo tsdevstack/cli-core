@@ -11,6 +11,7 @@ rs.mock('../utils/logger', { mock: true });
 rs.mock('../utils/config', { mock: true });
 rs.mock('../utils/paths', { mock: true });
 rs.mock('../utils/validation/validate-service-name', { mock: true });
+rs.mock('../utils/workers', { mock: true });
 
 import inquirer from 'inquirer';
 import fs from 'node:fs';
@@ -18,6 +19,7 @@ import { logger } from '../utils/logger';
 import { loadFrameworkConfig, saveFrameworkConfig } from '../utils/config';
 import { findProjectRoot } from '../utils/paths';
 import { validateServiceName } from '../utils/validation/validate-service-name';
+import { addWorkerScripts, scaffoldWorkerFiles } from '../utils/workers';
 import { CliError } from '../utils/errors';
 import { createMockFrameworkConfig } from '../test-fixtures/framework-config';
 import { registerDetachedWorker } from './register-detached-worker';
@@ -26,6 +28,19 @@ describe('registerDetachedWorker', () => {
   beforeEach(() => {
     rs.resetAllMocks();
     rs.mocked(findProjectRoot).mockReturnValue('/project');
+    rs.mocked(fs.existsSync).mockReturnValue(true);
+    rs.mocked(scaffoldWorkerFiles).mockReturnValue({
+      created: [
+        'src/worker.ts',
+        'src/worker.module.ts',
+        'tsconfig.worker.json',
+      ],
+      kept: [],
+    });
+    rs.mocked(addWorkerScripts).mockReturnValue({
+      added: ['start-worker:dev', 'start-worker'],
+      kept: [],
+    });
   });
 
   describe('when no NestJS services exist', () => {
@@ -288,47 +303,91 @@ describe('registerDetachedWorker', () => {
     });
   });
 
-  describe('worker.ts file check', () => {
-    it('should warn when worker.ts does not exist', async () => {
+  describe('worker files and scripts', () => {
+    beforeEach(() => {
       rs.mocked(loadFrameworkConfig).mockReturnValue(
         createMockFrameworkConfig({
-          services: [{ name: 'auth-service', type: 'nestjs', port: 3000 }],
+          services: [{ name: 'offers-service', type: 'nestjs', port: 3001 }],
         }),
-      );
-
-      rs.mocked(fs.existsSync).mockReturnValue(false);
-
-      await registerDetachedWorker({
-        name: 'auth-worker',
-        baseService: 'auth-service',
-      });
-
-      expect(fs.existsSync).toHaveBeenCalledWith(
-        '/project/apps/auth-service/src/worker.ts',
-      );
-      expect(logger.warn).toHaveBeenCalledWith('Note: worker.ts not found at:');
-      expect(logger.warn).toHaveBeenCalledWith(
-        '  apps/auth-service/src/worker.ts',
       );
     });
 
-    it('should not warn when worker.ts exists', async () => {
-      rs.mocked(loadFrameworkConfig).mockReturnValue(
-        createMockFrameworkConfig({
-          services: [{ name: 'auth-service', type: 'nestjs', port: 3000 }],
-        }),
-      );
-
-      rs.mocked(fs.existsSync).mockReturnValue(true);
-
+    it("should create the missing files and scripts in the base service's folder", async () => {
       await registerDetachedWorker({
-        name: 'auth-worker',
-        baseService: 'auth-service',
+        name: 'offers-worker',
+        baseService: 'offers-service',
       });
 
-      expect(logger.warn).not.toHaveBeenCalledWith(
-        'Note: worker.ts not found at:',
+      expect(scaffoldWorkerFiles).toHaveBeenCalledWith(
+        '/project/apps/offers-service',
       );
+      expect(addWorkerScripts).toHaveBeenCalledWith(
+        '/project/apps/offers-service/package.json',
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'Created in apps/offers-service:',
+      );
+      expect(logger.info).toHaveBeenCalledWith('  src/worker.module.ts');
+      expect(logger.info).toHaveBeenCalledWith(
+        '  package.json script "start-worker:dev"',
+      );
+    });
+
+    it('should list what was already there and left alone', async () => {
+      rs.mocked(scaffoldWorkerFiles).mockReturnValue({
+        created: ['tsconfig.worker.json'],
+        kept: ['src/worker.ts', 'src/worker.module.ts'],
+      });
+      rs.mocked(addWorkerScripts).mockReturnValue({
+        added: [],
+        kept: ['start-worker:dev', 'start-worker'],
+      });
+
+      await registerDetachedWorker({
+        name: 'offers-worker',
+        baseService: 'offers-service',
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'Already in apps/offers-service, left as they are:',
+      );
+      expect(logger.info).toHaveBeenCalledWith('  src/worker.ts');
+      expect(logger.info).toHaveBeenCalledWith(
+        '  package.json script "start-worker"',
+      );
+    });
+
+    it('should say nothing was created when everything was there', async () => {
+      rs.mocked(scaffoldWorkerFiles).mockReturnValue({
+        created: [],
+        kept: ['src/worker.ts', 'src/worker.module.ts', 'tsconfig.worker.json'],
+      });
+      rs.mocked(addWorkerScripts).mockReturnValue({
+        added: [],
+        kept: ['start-worker:dev', 'start-worker'],
+      });
+
+      await registerDetachedWorker({
+        name: 'offers-worker',
+        baseService: 'offers-service',
+      });
+
+      expect(logger.info).not.toHaveBeenCalledWith(
+        'Created in apps/offers-service:',
+      );
+    });
+
+    it("should stop before changing anything when the base service's folder has no package.json", async () => {
+      rs.mocked(fs.existsSync).mockReturnValue(false);
+
+      await expect(
+        registerDetachedWorker({
+          name: 'offers-worker',
+          baseService: 'offers-service',
+        }),
+      ).rejects.toThrow('apps/offers-service/package.json not found');
+      expect(scaffoldWorkerFiles).not.toHaveBeenCalled();
+      expect(saveFrameworkConfig).not.toHaveBeenCalled();
     });
   });
 
@@ -438,32 +497,12 @@ describe('registerDetachedWorker', () => {
       );
     });
 
-    it('should show different next steps when worker.ts exists', async () => {
+    it('should point to adding a processor, then committing and deploying', async () => {
       rs.mocked(loadFrameworkConfig).mockReturnValue(
         createMockFrameworkConfig({
           services: [{ name: 'auth-service', type: 'nestjs', port: 3000 }],
         }),
       );
-
-      rs.mocked(fs.existsSync).mockReturnValue(true);
-
-      await registerDetachedWorker({
-        name: 'auth-worker',
-        baseService: 'auth-service',
-      });
-
-      // When worker.ts exists, step 1 is "Commit your changes" (no create step)
-      expect(logger.info).toHaveBeenCalledWith('  1. Commit your changes');
-    });
-
-    it('should show create step in next steps when worker.ts does not exist', async () => {
-      rs.mocked(loadFrameworkConfig).mockReturnValue(
-        createMockFrameworkConfig({
-          services: [{ name: 'auth-service', type: 'nestjs', port: 3000 }],
-        }),
-      );
-
-      rs.mocked(fs.existsSync).mockReturnValue(false);
 
       await registerDetachedWorker({
         name: 'auth-worker',
@@ -471,7 +510,11 @@ describe('registerDetachedWorker', () => {
       });
 
       expect(logger.info).toHaveBeenCalledWith(
-        '  1. Create the worker files and scripts listed above (auth-service in the auth template has them)',
+        '  1. Add a processor: register its queue in apps/auth-service/src/worker.module.ts and add the class to providers',
+      );
+      expect(logger.info).toHaveBeenCalledWith('  2. Commit your changes');
+      expect(logger.info).toHaveBeenCalledWith(
+        '  3. Deploy the service: npx tsdevstack infra:deploy-services --service auth-service',
       );
     });
   });

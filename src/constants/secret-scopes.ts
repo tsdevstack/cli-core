@@ -34,11 +34,28 @@ export const AUTH_SERVICE_SECRETS = [
 /** Azure: the shared scope's Key Vault is `{project}-{env}-kv` */
 export const AZURE_SHARED_KEY_VAULT_SUFFIX = 'kv';
 
+/**
+ * Azure: the scope of the database jobs' Key Vault, {project}-{env}-dbjobs.
+ * It holds what only db-init and the migrations may read (the server admin's
+ * password, each service's MIGRATION_DATABASE_URL): a service's identity
+ * reads its whole vault, and Azure can't hide one secret inside it.
+ */
+export const AZURE_DB_JOBS_KEY_VAULT_SCOPE = 'dbjobs';
+
+/** Azure: the server admin's password in the database jobs' Key Vault */
+export const AZURE_DB_ADMIN_PASSWORD_SECRET = 'db-admin-password';
+
 /** Azure Key Vault names: 3-24 characters */
 export const AZURE_KEY_VAULT_NAME_MAX_LENGTH = 24;
 
 /** Characters of the name hash that keep a shortened Key Vault name unique */
 export const AZURE_KEY_VAULT_NAME_HASH_LENGTH = 8;
+
+/**
+ * Characters of the account suffix on names unique worldwide (hex of the
+ * SHA-256 of the subscription ID); infra-core's ACCOUNT_SUFFIX_LENGTH
+ */
+export const ACCOUNT_SUFFIX_LENGTH = 6;
 
 /** Azure: env var with the shared vault's name, set on every backend container */
 export const AZURE_KEYVAULT_NAME_ENV = 'AZURE_KEYVAULT_NAME';

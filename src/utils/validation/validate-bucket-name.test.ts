@@ -223,4 +223,22 @@ describe('validateBucketName', () => {
       }
     });
   });
+
+  describe('room for the account suffix', () => {
+    it("should keep 13 characters free for AWS's -{account ID}", () => {
+      // 'p' x 30 + '-' + 'bucket' + '-' + 'staging' = 45; + 13 = 58 fits
+      const fits = createConfig({
+        project: { name: 'p'.repeat(30), version: '1.0.0' },
+      });
+      expect(() => validateBucketName('bucket', fits)).not.toThrow();
+
+      // 'p' x 40 + '-' + 'bucket' + '-' + 'staging' = 55; + 13 = 68 does not
+      const tooLong = createConfig({
+        project: { name: 'p'.repeat(40), version: '1.0.0' },
+      });
+      expect(() => validateBucketName('bucket', tooLong)).toThrow(
+        'Maximum: 50 characters',
+      );
+    });
+  });
 });

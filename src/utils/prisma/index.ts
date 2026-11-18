@@ -5,6 +5,6 @@
  */
 
 export * from './has-prisma-schema';
-export * from './get-database-url';
+export * from './get-migration-database-url';
 export * from './deploy-prisma-migration';
 export * from './generate-prisma-client';

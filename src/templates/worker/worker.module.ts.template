@@ -1,0 +1,28 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import {
+  BullConfigModule,
+  SecretsModule,
+  ObservabilityModule,
+} from '@tsdevstack/nest-common';
+
+/**
+ * WorkerModule
+ *
+ * Queue processors run here, in the worker (always on), not in the service.
+ * The service adds jobs to a queue; the worker processes them.
+ *
+ * To add a queue: register it here with
+ * `BullModule.registerQueue({ name: 'my-queue' })` (from '@nestjs/bullmq'),
+ * and add its `@Processor('my-queue')` class to `providers`.
+ */
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    SecretsModule,
+    ObservabilityModule.forRoot(),
+    BullConfigModule.forRoot(),
+  ],
+  providers: [],
+})
+export class WorkerModule {}

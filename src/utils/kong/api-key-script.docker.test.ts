@@ -49,6 +49,7 @@ import {
   loadApiKeyContract,
   readApiKeyScriptSource,
 } from '../../test-utils/kong';
+import { KONG_BASE_IMAGE } from '../../constants';
 
 const {
   API_KEY_INDEX_MARKER_KEY,
@@ -67,7 +68,8 @@ const {
   hashApiKey,
 } = loadApiKeyContract();
 
-const KONG_IMAGE = 'kong:3.8.0';
+/** The base image of the generated Kong image */
+const KONG_IMAGE = KONG_BASE_IMAGE;
 const START_TIMEOUT_MS = 120_000;
 const TEST_TIMEOUT_MS = 60_000;
 

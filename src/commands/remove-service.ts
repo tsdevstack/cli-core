@@ -5,7 +5,7 @@
  * - Deletes apps/{service-name}/ directory
  * - Deletes packages/{service-name}-client/ if exists
  * - Removes from config.json
- * - Removes from infrastructure.json
+ * - Removes from infrastructure.json, with the scheduled jobs that call it
  * - Runs sync to regenerate docker-compose, kong, etc.
  *
  * Usage:
@@ -180,7 +180,9 @@ export async function removeService(
       logger.validating(`  Coupled worker "${worker.name}" from config.json`);
     }
   }
-  logger.validating('  Overrides in .tsdevstack/infrastructure.json (if any)');
+  logger.validating(
+    '  Overrides and scheduled jobs calling it in .tsdevstack/infrastructure.json (if any)',
+  );
   logger.newline();
 
   // Dry run mode
@@ -248,9 +250,42 @@ export async function removeService(
         if (env === 'version') continue;
         const envConfig = infraConfig[env] as
           Record<string, unknown> | undefined;
+        if (!envConfig || typeof envConfig !== 'object') continue;
         for (const name of namesToRemove) {
-          if (envConfig && name in envConfig) {
+          if (name in envConfig) {
             delete envConfig[name];
+            modified = true;
+          }
+        }
+
+        // Scheduled jobs that call it: infra:deploy refuses a job whose
+        // targetService isn't in config.json
+        if (Array.isArray(envConfig.scheduledJobs)) {
+          const jobs = envConfig.scheduledJobs as unknown[];
+          const kept = jobs.filter(
+            (job) =>
+              !(
+                job &&
+                typeof job === 'object' &&
+                namesToRemove.has(
+                  String((job as { targetService?: unknown }).targetService),
+                )
+              ),
+          );
+          for (const job of jobs) {
+            if (!kept.includes(job)) {
+              const jobName = (job as { name?: unknown }).name;
+              logger.success(
+                `  Removed scheduled job "${String(jobName)}" (${env})`,
+              );
+            }
+          }
+          if (kept.length !== jobs.length) {
+            if (kept.length > 0) {
+              envConfig.scheduledJobs = kept;
+            } else {
+              delete envConfig.scheduledJobs;
+            }
             modified = true;
           }
         }
@@ -287,12 +322,14 @@ export async function removeService(
   logger.success(`Service "${resolvedServiceName}" removed from local project`);
   logger.newline();
 
-  // Reminder about Kong redeploy
+  // infra:deploy regenerates Terraform and Kong without the service: its
+  // Kong routes and its load balancer or edge routes go
   logger.info('Next steps:');
   logger.info('  1. Commit your changes');
-  logger.info('  2. Rebuild and redeploy Kong to each environment:');
-  logger.info('     npx tsdevstack infra:generate-kong --env <env>');
-  logger.info('     npx tsdevstack infra:build-kong --env <env>');
-  logger.info('     npx tsdevstack infra:deploy-kong --env <env>');
+  logger.info('  2. In each environment it ran in:');
+  logger.info(
+    `     npx tsdevstack infra:remove-service ${resolvedServiceName} --env <env>  # if not done yet`,
+  );
+  logger.info('     npx tsdevstack infra:deploy --env <env>');
   logger.newline();
 }

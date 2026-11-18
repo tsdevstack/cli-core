@@ -8,16 +8,16 @@
  */
 
 import {
-  KONG_BASE_IMAGE,
+  KONG_ACCESS_LOG_CONDITION_VARIABLE,
+  KONG_ACCESS_LOG_FORMAT,
   KONG_TRACING_INSTRUMENTATIONS,
   KONG_DECLARATIVE_DIR,
   KONG_OIDC_PLUGIN_NAME,
-  KONG_OIDC_V3_COMMIT,
   KONG_PLUGINS_BUNDLED_KEYWORD,
   KONG_PLUGINS_DIR,
-  LUA_RESTY_OPENIDC_VERSION,
   KONG_GENERATED_FILE_HEADER,
 } from '../../constants';
+import { buildKongBaseLayers } from './build-kong-base-layers';
 import { buildKongHealthCheckScript } from './build-kong-health-check-script';
 import { buildKongNginxHttpInclude } from './build-kong-nginx-http-include';
 
@@ -51,30 +51,7 @@ export function generateKongDockerfile(
   return `${KONG_GENERATED_FILE_HEADER}
 # Custom Kong plugins go in kong-plugins/ at the project root.
 
-FROM ${KONG_BASE_IMAGE}
-
-# Switch to root to install plugins and configure
-USER root
-
-# Install dependencies for plugin installation and health checks
-RUN apt-get update && apt-get install -y git unzip curl && rm -rf /var/lib/apt/lists/*
-
-# Install lua-resty-openidc dependency manually (luarocks has manifest size issues)
-RUN git clone --depth 1 --branch ${LUA_RESTY_OPENIDC_VERSION} https://github.com/zmartzone/lua-resty-openidc.git /tmp/lua-resty-openidc && \\
-    cd /tmp/lua-resty-openidc && \\
-    cp -r lib/resty/* /usr/local/share/lua/5.1/resty/ && \\
-    rm -rf /tmp/lua-resty-openidc
-
-# Install kong-oidc-v3 plugin manually (shallow fetch of the pinned commit)
-RUN mkdir -p /tmp/kong-oidc-v3 && \\
-    cd /tmp/kong-oidc-v3 && \\
-    git init -q && \\
-    git fetch -q --depth 1 https://github.com/Gate1106/kong-oidc-v3.git ${KONG_OIDC_V3_COMMIT} && \\
-    git checkout -q FETCH_HEAD && \\
-    mkdir -p /usr/local/share/lua/5.1/kong/plugins/oidc && \\
-    cp -r /tmp/kong-oidc-v3/kong/plugins/oidc/* /usr/local/share/lua/5.1/kong/plugins/oidc/ && \\
-    rm -rf /tmp/kong-oidc-v3
-
+${buildKongBaseLayers()}
 # Framework and project plugins (one folder per plugin)
 COPY ${KONG_PLUGINS_DIR}/ /usr/local/share/lua/5.1/kong/plugins/
 
@@ -95,13 +72,20 @@ ENV KONG_ADMIN_LISTEN="off"
 ENV KONG_STATUS_LISTEN="0.0.0.0:8100"
 
 # Tracing (off by default in Kong): a span per request and per upstream
-# try, sent by the opentelemetry plugin (its sampling_rate decides)
+# try, sent by the tsdevstack-opentelemetry plugin (its sampling_rate
+# decides, a trace the frontend already sampled is kept)
 ENV KONG_TRACING_INSTRUMENTATIONS=${KONG_TRACING_INSTRUMENTATIONS}
 
-# Logging
-ENV KONG_PROXY_ACCESS_LOG=/dev/stdout
+# Logging. The proxy access log leaves out load balancer probes answered
+# 200 (the condition's map is in the nginx include below)
+ENV KONG_PROXY_ACCESS_LOG="/dev/stdout ${KONG_ACCESS_LOG_FORMAT} if=\\$${KONG_ACCESS_LOG_CONDITION_VARIABLE}"
 ENV KONG_PROXY_ERROR_LOG=/dev/stderr
 ENV KONG_LOG_LEVEL=notice
+
+# Request debugging off (on by default in Kong): it answers requests with
+# the X-Kong-Request-Debug headers with timing details, and prints the
+# token for them to the log at every start
+ENV KONG_REQUEST_DEBUG=off
 
 # TLS to Redis: verify the server certificate against the system CA bundle.
 # Kong's default depth (1) rejects chains with two intermediates, such as a

@@ -7,9 +7,9 @@ describe('generateKongDockerfile', () => {
     expect(typeof result).toBe('string');
   });
 
-  it('should pin the kong:3.8.0 base image', () => {
+  it('should pin the kong:3.9.4 base image', () => {
     const result = generateKongDockerfile();
-    expect(result).toMatch(/^FROM kong:3\.8\.0$/m);
+    expect(result).toMatch(/^FROM kong:3\.9\.4$/m);
   });
 
   it('should pin kong-oidc-v3 to a commit and lua-resty-openidc to v1.7.6', () => {
@@ -20,6 +20,16 @@ describe('generateKongDockerfile', () => {
     expect(result).toContain('git checkout -q FETCH_HEAD');
     expect(result).not.toContain('git clone https://github.com/Gate1106');
     expect(result).toContain('--branch v1.7.6');
+  });
+
+  it("should lower the OIDC plugin's bad-token logs after installing it, before the other plugins", () => {
+    const result = generateKongDockerfile();
+    const patch = result.indexOf("kong.log.info('Bearer JWT verify failed: '");
+    expect(patch).toBeGreaterThan(result.indexOf('rm -rf /tmp/kong-oidc-v3'));
+    expect(patch).toBeGreaterThan(
+      result.indexOf('rm -rf /tmp/lua-resty-openidc'),
+    );
+    expect(patch).toBeLessThan(result.indexOf('COPY kong-plugins/'));
   });
 
   it('should include OIDC plugin installation', () => {
@@ -84,8 +94,15 @@ describe('generateKongDockerfile', () => {
 
   it('should configure logging to stdout/stderr', () => {
     const result = generateKongDockerfile();
-    expect(result).toContain('KONG_PROXY_ACCESS_LOG=/dev/stdout');
+    expect(result).toContain(
+      'ENV KONG_PROXY_ACCESS_LOG="/dev/stdout kong_log_format if=\\$tsdevstack_access_log"',
+    );
     expect(result).toContain('KONG_PROXY_ERROR_LOG=/dev/stderr');
+  });
+
+  it("should define the access log's condition in the include file Kong loads", () => {
+    const result = generateKongDockerfile();
+    expect(result).toContain(`'map "$uri:$status" $tsdevstack_access_log {'`);
   });
 
   it('should verify Redis TLS against the system CA bundle with room for cross-signed roots', () => {
@@ -132,6 +149,10 @@ describe('generateKongDockerfile', () => {
       );
     });
 
+    it("should turn off Kong's request debugging (no debug token in the log)", () => {
+      expect(generateKongDockerfile()).toContain('ENV KONG_REQUEST_DEBUG=off');
+    });
+
     it('should set them with ENV only (no hardcoded listen flags in CMD)', () => {
       const result = generateKongDockerfile();
       expect(result).toContain('CMD ["kong", "docker-start"]');
@@ -161,8 +182,9 @@ describe('generateKongDockerfile', () => {
   it('should declare the lua-resty-openidc caches through an http include file', () => {
     const result = generateKongDockerfile();
     expect(result).toContain(
-      "'lua_shared_dict discovery 1m;' 'lua_shared_dict jwks 1m;' > /etc/kong/tsdevstack-nginx-http.conf",
+      "RUN printf '%s\\n' 'lua_shared_dict discovery 1m;' 'lua_shared_dict jwks 1m;'",
     );
+    expect(result).toContain('> /etc/kong/tsdevstack-nginx-http.conf');
     expect(result).toMatch(
       /^ENV KONG_NGINX_HTTP_INCLUDE=\/etc\/kong\/tsdevstack-nginx-http\.conf$/m,
     );

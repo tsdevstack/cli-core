@@ -8,6 +8,11 @@ rs.mock('./create-azure-credential', () => ({
   createAzureCredential: rs.fn(() => ({})),
 }));
 
+// The environment's scheme is checked once per command (its own test)
+rs.mock('./resolve-azure-naming-scheme', () => ({
+  resolveAzureNamingScheme: rs.fn(async () => 'legacy'),
+}));
+
 rs.mock('@azure/arm-keyvault', () => {
   return {
     KeyVaultManagementClient: class MockKeyVaultManagementClient {
@@ -23,7 +28,12 @@ rs.mock('@azure/arm-keyvault', () => {
 import { ensureKeyVaultExists } from './ensure-key-vault-exists';
 import { buildKeyVaultName } from './build-key-vault-name';
 
-const AUTH_VAULT = buildKeyVaultName('myproject', 'dev', 'auth-service');
+const AUTH_VAULT = buildKeyVaultName(
+  'myproject',
+  'dev',
+  { scheme: 'legacy', subscriptionId: 'test-subscription-id' },
+  'auth-service',
+);
 
 describe('ensureKeyVaultExists', () => {
   beforeEach(() => {
@@ -218,6 +228,86 @@ describe('ensureKeyVaultExists', () => {
       properties: Record<string, unknown>;
     };
     expect(parameters.properties.createMode).toBeUndefined();
+  });
+
+  it('should create a new vault once for calls made at the same time', async () => {
+    mockVaultsGet.mockRejectedValue({ statusCode: 404 });
+    let finishCreate: () => void = () => {};
+    mockVaultsBeginCreateOrUpdateAndWait.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishCreate = resolve;
+      }),
+    );
+
+    const calls = Array.from({ length: 5 }, () =>
+      ensureKeyVaultExists('myproject', 'dev', mockCredentials, 'auth-service'),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    finishCreate();
+    const results = await Promise.all(calls);
+
+    expect(mockVaultsBeginCreateOrUpdateAndWait).toHaveBeenCalledTimes(1);
+    expect(results[0]).toEqual({ exists: true, created: true });
+    expect(results.slice(1)).toEqual(
+      Array(4).fill({ exists: true, created: false }),
+    );
+  });
+
+  it('should give every waiting call the error of the create they shared', async () => {
+    mockVaultsGet.mockRejectedValue({ statusCode: 404 });
+    mockVaultsBeginCreateOrUpdateAndWait.mockRejectedValue(
+      new Error('Forbidden'),
+    );
+
+    const results = await Promise.all([
+      ensureKeyVaultExists('myproject', 'dev', mockCredentials, 'auth-service'),
+      ensureKeyVaultExists('myproject', 'dev', mockCredentials, 'auth-service'),
+    ]);
+
+    expect(mockVaultsBeginCreateOrUpdateAndWait).toHaveBeenCalledTimes(1);
+    for (const result of results) {
+      expect(result).toEqual({
+        exists: false,
+        created: false,
+        error: 'Forbidden',
+      });
+    }
+  });
+
+  it('should check again on a later call, once the earlier one ended', async () => {
+    mockVaultsGet.mockResolvedValue({ name: AUTH_VAULT });
+
+    await ensureKeyVaultExists(
+      'myproject',
+      'dev',
+      mockCredentials,
+      'auth-service',
+    );
+    await ensureKeyVaultExists(
+      'myproject',
+      'dev',
+      mockCredentials,
+      'auth-service',
+    );
+
+    expect(mockVaultsGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not make different vaults wait for each other', async () => {
+    mockVaultsGet.mockRejectedValue({ statusCode: 404 });
+    mockVaultsBeginCreateOrUpdateAndWait.mockResolvedValue({});
+
+    await Promise.all([
+      ensureKeyVaultExists('myproject', 'dev', mockCredentials, 'auth-service'),
+      ensureKeyVaultExists(
+        'myproject',
+        'dev',
+        mockCredentials,
+        'offers-service',
+      ),
+    ]);
+
+    expect(mockVaultsBeginCreateOrUpdateAndWait).toHaveBeenCalledTimes(2);
   });
 
   it('should handle non-Error exceptions', async () => {

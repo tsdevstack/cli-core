@@ -7,6 +7,7 @@ import * as dockerModule from '../utils/docker';
 import * as configModule from '../utils/config';
 import * as loggerModule from '../utils/logger';
 import * as prismaModule from '../utils/prisma';
+import * as databaseModule from '../utils/database';
 import * as findProjectRootModule from '../utils/paths/find-project-root';
 import { sync } from './sync';
 import type { FrameworkConfig } from '../utils/config';
@@ -19,6 +20,7 @@ rs.mock('../utils/docker', { mock: true });
 rs.mock('../utils/config', { mock: true });
 rs.mock('../utils/logger', { mock: true });
 rs.mock('../utils/prisma', { mock: true });
+rs.mock('../utils/database', { mock: true });
 rs.mock('../utils/paths/find-project-root', { mock: true });
 
 describe('sync', () => {
@@ -69,7 +71,7 @@ describe('sync', () => {
       (name: string) => `${name.replace(/-service$/, '')}-db`,
     );
     rs.mocked(prismaModule.hasPrismaSchema).mockReturnValue(true);
-    rs.mocked(prismaModule.getDatabaseUrl).mockReturnValue(
+    rs.mocked(prismaModule.getMigrationDatabaseUrl).mockReturnValue(
       'postgresql://localhost:5432/db',
     );
 
@@ -215,6 +217,43 @@ describe('sync', () => {
     });
   });
 
+  describe('Database users', () => {
+    it('should set up the roles of every service with a database', () => {
+      sync();
+
+      expect(databaseModule.runLocalDbInit).toHaveBeenCalledWith(
+        '/mock/project',
+        ['auth-service', 'user-service'],
+      );
+    });
+
+    it('should set them up after the databases are up and before the migrations', () => {
+      sync();
+
+      const setup = rs.mocked(databaseModule.runLocalDbInit).mock
+        .invocationCallOrder[0];
+      const databasesUp = rs.mocked(dockerModule.recreateContainers).mock
+        .invocationCallOrder[0];
+      const firstMigration = rs.mocked(prismaModule.deployPrismaMigration).mock
+        .invocationCallOrder[0];
+      expect(setup).toBeGreaterThan(databasesUp);
+      expect(setup).toBeLessThan(firstMigration);
+    });
+
+    it('should skip the step when no service has a database', () => {
+      rs.mocked(configModule.loadFrameworkConfig).mockReturnValue({
+        ...mockConfig,
+        services: [
+          { name: 'frontend', type: 'nextjs', port: 3000, hasDatabase: false },
+        ],
+      });
+
+      sync();
+
+      expect(databaseModule.runLocalDbInit).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Container management', () => {
     it('should start remaining containers with detach and no wait', () => {
       sync();
@@ -276,8 +315,8 @@ describe('sync', () => {
       );
     });
 
-    it('should skip services without DATABASE_URL', () => {
-      rs.mocked(prismaModule.getDatabaseUrl).mockImplementation(
+    it('should skip services without a database URL', () => {
+      rs.mocked(prismaModule.getMigrationDatabaseUrl).mockImplementation(
         (name: string) =>
           name === 'auth-service' ? 'postgresql://localhost:5432/db' : null,
       );

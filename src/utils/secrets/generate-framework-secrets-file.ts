@@ -6,11 +6,13 @@ import { type FrameworkConfig, hasAuthTemplate } from '../config';
 import { CliError } from '../errors';
 import type { SecretsFile, Secrets } from './types';
 import { generateDatabaseSecrets } from './generate-database-secrets';
+import { generateDatabaseAppSecrets } from './generate-database-app-secrets';
 import { generateBase64Secret } from './generate-base64-secret';
 import { generateHexSecret } from './generate-hex-secret';
 import { generateRSAKeyPair } from './generate-rsa-keypair';
 import { generateServiceUrls } from './generate-service-urls';
 import {
+  MIGRATION_DATABASE_URL_KEY,
   LOCAL_REDIS_HOST,
   LOCAL_REDIS_PORT,
   LOCAL_REDIS_PASSWORD,
@@ -342,7 +344,9 @@ export function generateFrameworkSecretsFile(
       serviceSecrets.API_KEY = frameworkSecrets[thisServiceApiKeyName];
     }
 
-    // Generate DATABASE_URL if service has a database
+    // Database URLs if the service has a database: DATABASE_URL is the app
+    // role's (the running service), MIGRATION_DATABASE_URL the owner's
+    // (migrations, Prisma's tools; also the container's superuser)
     if (service.hasDatabase) {
       const dbPort =
         service.databasePort ||
@@ -360,7 +364,17 @@ export function generateFrameworkSecretsFile(
         dbCredentials[passwordKey],
       );
 
-      serviceSecrets.DATABASE_URL = dbSecrets.url;
+      const existingService = existingFrameworkSecrets?.[service.name];
+      const appSecrets = generateDatabaseAppSecrets(
+        service.name,
+        dbPort,
+        existingService && typeof existingService === 'object'
+          ? Reflect.get(existingService, 'DATABASE_URL')
+          : undefined,
+      );
+
+      serviceSecrets.DATABASE_URL = appSecrets.url;
+      serviceSecrets[MIGRATION_DATABASE_URL_KEY] = dbSecrets.url;
     }
 
     file[service.name] = serviceSecrets;

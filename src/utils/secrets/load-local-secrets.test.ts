@@ -238,6 +238,26 @@ describe('loadLocalSecrets', () => {
       });
     });
 
+    it("should extract the owner's user and password (MIGRATION_DATABASE_URL), not the app role's", () => {
+      const mockSecretsFile: SecretsFile = {
+        secrets: {},
+        'auth-service': {
+          secrets: [],
+          DATABASE_URL:
+            'postgresql://auth-service_app:apppass@localhost:5432/auth',
+          MIGRATION_DATABASE_URL:
+            'postgresql://auth-service:ownerpass@localhost:5432/auth',
+        },
+      };
+
+      rs.mocked(fsModule.readJsonFile).mockReturnValue(mockSecretsFile);
+
+      const result = loadLocalSecrets(true, mockRootDir);
+
+      expect(result.AUTH_DB_USER).toBe('auth-service');
+      expect(result.AUTH_DB_PASSWORD).toBe('ownerpass');
+    });
+
     it('should handle service names with -service suffix', () => {
       const mockSecretsFile: SecretsFile = {
         secrets: {},

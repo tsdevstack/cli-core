@@ -3,7 +3,7 @@ import { generateIpCeilingPlugin } from './generate-ip-ceiling-plugin';
 
 describe('generateIpCeilingPlugin', () => {
   describe('Standard use cases', () => {
-    it('should limit per IP per minute through Redis, client headers shown (hiding them breaks 429 on kong:3.8.0)', () => {
+    it('should limit per IP per minute through Redis, client headers shown (its 429 carries Retry-After)', () => {
       expect(generateIpCeilingPlugin(600)).toEqual({
         name: 'rate-limiting',
         config: {

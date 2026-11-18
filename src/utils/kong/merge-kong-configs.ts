@@ -1,5 +1,9 @@
 import type { KongTemplate } from './types';
 import { CliError } from '../errors';
+import {
+  KONG_BUNDLED_OPENTELEMETRY_PLUGIN_NAME,
+  KONG_OPENTELEMETRY_PLUGIN_NAME,
+} from '../../constants';
 
 /**
  * Merges framework-generated Kong config with user customizations.
@@ -13,7 +17,8 @@ import { CliError } from '../errors';
  *
  * Framework global plugins come first. Kong accepts one global instance per
  * plugin name, so a user global plugin with a framework plugin's name fails
- * here with a hint instead of at Kong startup.
+ * here with a hint instead of at Kong startup. So does Kong's bundled
+ * opentelemetry plugin, which the framework's tracing plugin runs.
  *
  * @param tsdevstackConfig - Framework-generated config (kong.tsdevstack.yml)
  * @param userConfig - User customizations (kong.user.yml)
@@ -28,6 +33,11 @@ export function mergeKongConfigs(
   const userPlugins = userConfig.plugins || [];
 
   const frameworkNames = new Set(frameworkPlugins.map((p) => p.name));
+  // The framework's tracing plugin runs Kong's bundled one: both would trace
+  // every request twice
+  if (frameworkNames.has(KONG_OPENTELEMETRY_PLUGIN_NAME)) {
+    frameworkNames.add(KONG_BUNDLED_OPENTELEMETRY_PLUGIN_NAME);
+  }
   const collisions = [
     ...new Set(
       userPlugins.map((p) => p.name).filter((n) => frameworkNames.has(n)),
@@ -37,7 +47,7 @@ export function mergeKongConfigs(
     throw new CliError(
       `kong.user.yml declares global plugin(s) that tsdevstack already generates: ${collisions.join(', ')}`,
       'Kong configuration merge failed',
-      'Remove them from the plugins list in kong.user.yml. Framework plugins are added to kong.tsdevstack.yml automatically, and Kong allows one global instance per plugin name.',
+      `Remove them from the plugins list in kong.user.yml. Framework plugins are added to kong.tsdevstack.yml automatically (tracing runs Kong's ${KONG_BUNDLED_OPENTELEMETRY_PLUGIN_NAME} plugin as ${KONG_OPENTELEMETRY_PLUGIN_NAME}), and Kong allows one global instance per plugin name.`,
     );
   }
 

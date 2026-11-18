@@ -161,6 +161,94 @@ describe('removeService', () => {
     });
   });
 
+  describe('infrastructure.json', () => {
+    const infraConfig = {
+      $schema: './infrastructure.schema.json',
+      version: '1.0.0',
+      dev: {
+        'auth-service': { minInstances: 1 },
+        'auth-worker': { concurrency: 5 },
+        'user-service': { minInstances: 1 },
+        scheduledJobs: [
+          {
+            name: 'cleanup-tokens',
+            schedule: '0 3 * * *',
+            targetService: 'auth-service',
+            endpoint: '/auth/jobs/cleanup-tokens',
+          },
+          {
+            name: 'digest',
+            schedule: '0 8 * * *',
+            targetService: 'user-service',
+            endpoint: '/users/jobs/digest',
+          },
+        ],
+      },
+      prod: {
+        scheduledJobs: [
+          {
+            name: 'cleanup-tokens',
+            schedule: '0 3 * * *',
+            targetService: 'auth-service',
+            endpoint: '/auth/jobs/cleanup-tokens',
+          },
+        ],
+      },
+    };
+
+    const savedInfraConfig = (): Record<string, Record<string, unknown>> => {
+      const call = rs
+        .mocked(fs.writeFileSync)
+        .mock.calls.find(([file]) =>
+          String(file).endsWith('infrastructure.json'),
+        );
+      return JSON.parse(String(call?.[1])) as Record<
+        string,
+        Record<string, unknown>
+      >;
+    };
+
+    beforeEach(() => {
+      rs.mocked(fs.existsSync).mockImplementation((file) =>
+        String(file).endsWith('infrastructure.json'),
+      );
+      rs.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(infraConfig));
+      rs.mocked(inquirer.prompt).mockResolvedValue({ confirmed: true });
+    });
+
+    it("should remove the service's and its coupled workers' overrides", async () => {
+      await removeService('auth-service', {});
+
+      const dev = savedInfraConfig().dev;
+      expect(dev['auth-service']).toBeUndefined();
+      expect(dev['auth-worker']).toBeUndefined();
+      expect(dev['user-service']).toEqual({ minInstances: 1 });
+    });
+
+    it('should remove the scheduled jobs that call it, in every environment (infra:deploy refuses them)', async () => {
+      await removeService('auth-service', {});
+
+      const saved = savedInfraConfig();
+      expect(
+        (saved.dev.scheduledJobs as { name: string }[]).map((j) => j.name),
+      ).toEqual(['digest']);
+      expect(saved.prod.scheduledJobs).toBeUndefined();
+      expect(logger.success).toHaveBeenCalledWith(
+        '  Removed scheduled job "cleanup-tokens" (dev)',
+      );
+    });
+
+    it("should leave the other services' scheduled jobs alone", async () => {
+      await removeService('user-service', {});
+
+      const saved = savedInfraConfig();
+      expect(
+        (saved.dev.scheduledJobs as { name: string }[]).map((j) => j.name),
+      ).toEqual(['cleanup-tokens']);
+      expect(saved.prod.scheduledJobs).toHaveLength(1);
+    });
+  });
+
   describe('Sync', () => {
     it('should call sync with remove context after removal', async () => {
       rs.mocked(fs.existsSync).mockReturnValue(false);

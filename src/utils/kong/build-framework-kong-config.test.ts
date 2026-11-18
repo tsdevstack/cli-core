@@ -29,7 +29,12 @@ describe('buildFrameworkKongConfig', () => {
               client_ip_header: 'X-Tsdevstack-Client-IP',
               token_header: 'X-Tsdevstack-Frontend-Token',
               real_ip_header: 'X-Tsdevstack-Real-IP',
-              trace_headers: ['traceparent', 'tracestate', 'baggage'],
+              trace_headers: [
+                'traceparent',
+                'tracestate',
+                'baggage',
+                'X-Tsdevstack-Traceparent',
+              ],
             },
           },
           {
@@ -40,7 +45,7 @@ describe('buildFrameworkKongConfig', () => {
             },
           },
           {
-            name: 'opentelemetry',
+            name: 'tsdevstack-opentelemetry',
             config: {
               traces_endpoint: 'http://jaeger:4318/v1/traces',
               sampling_rate: 1,
@@ -50,6 +55,7 @@ describe('buildFrameworkKongConfig', () => {
                 inject: ['w3c'],
                 default_format: 'w3c',
               },
+              traceparent_copy_header: 'X-Tsdevstack-Traceparent',
             },
           },
         ],

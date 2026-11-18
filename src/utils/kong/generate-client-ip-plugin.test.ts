@@ -29,7 +29,12 @@ describe('generateClientIpPlugin', () => {
           client_ip_header: 'X-Tsdevstack-Client-IP',
           token_header: 'X-Tsdevstack-Frontend-Token',
           real_ip_header: 'X-Tsdevstack-Real-IP',
-          trace_headers: ['traceparent', 'tracestate', 'baggage'],
+          trace_headers: [
+            'traceparent',
+            'tracestate',
+            'baggage',
+            'X-Tsdevstack-Traceparent',
+          ],
         },
       });
     });

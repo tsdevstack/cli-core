@@ -3,7 +3,7 @@
  */
 
 import { KeyVaultManagementClient } from '@azure/arm-keyvault';
-import { buildKeyVaultName } from './build-key-vault-name';
+import { resolveKeyVaultName } from './resolve-key-vault-name';
 import { createAzureCredential } from './create-azure-credential';
 import type { AzureCredentials } from '../types';
 
@@ -33,7 +33,7 @@ export async function keyVaultExists(
   try {
     await client.vaults.get(
       `${projectName}-${env}-rg`,
-      buildKeyVaultName(projectName, env, scope),
+      await resolveKeyVaultName(credentials, projectName, env, scope),
     );
     return true;
   } catch (error: unknown) {

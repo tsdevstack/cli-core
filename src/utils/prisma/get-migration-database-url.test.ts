@@ -8,19 +8,32 @@ rs.mock('../secrets', () => ({
   loadServiceSecrets: mockLoadServiceSecrets,
 }));
 
-import { getDatabaseUrl } from './get-database-url';
+import { getMigrationDatabaseUrl } from './get-migration-database-url';
 
-describe('getDatabaseUrl', () => {
+describe('getMigrationDatabaseUrl', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
 
-  it('should return DATABASE_URL with localhost replacing Docker hostname', () => {
+  it("should return the owner's MIGRATION_DATABASE_URL, not the app role's DATABASE_URL", () => {
+    mockLoadServiceSecrets.mockReturnValue({
+      DATABASE_URL:
+        'postgresql://auth-service_app:app@localhost:5432/auth-service',
+      MIGRATION_DATABASE_URL:
+        'postgresql://auth-service:owner@localhost:5432/auth-service',
+    });
+
+    expect(getMigrationDatabaseUrl('auth-service')).toBe(
+      'postgresql://auth-service:owner@localhost:5432/auth-service',
+    );
+  });
+
+  it('should fall back to DATABASE_URL (secrets made before the app role) with localhost replacing Docker hostname', () => {
     mockLoadServiceSecrets.mockReturnValue({
       DATABASE_URL: 'postgresql://user:pass@auth-db:5432/auth',
     });
 
-    const result = getDatabaseUrl('auth-service');
+    const result = getMigrationDatabaseUrl('auth-service');
 
     expect(result).toBe('postgresql://user:pass@localhost:5432/auth');
   });
@@ -28,7 +41,7 @@ describe('getDatabaseUrl', () => {
   it('should return null when service secrets not found', () => {
     mockLoadServiceSecrets.mockReturnValue(null);
 
-    expect(getDatabaseUrl('missing-service')).toBeNull();
+    expect(getMigrationDatabaseUrl('missing-service')).toBeNull();
   });
 
   it('should return null when DATABASE_URL is not set', () => {
@@ -36,7 +49,7 @@ describe('getDatabaseUrl', () => {
       API_KEY: 'some-key',
     });
 
-    expect(getDatabaseUrl('auth-service')).toBeNull();
+    expect(getMigrationDatabaseUrl('auth-service')).toBeNull();
   });
 
   it('should return null when DATABASE_URL is not a string', () => {
@@ -44,7 +57,7 @@ describe('getDatabaseUrl', () => {
       DATABASE_URL: 123,
     });
 
-    expect(getDatabaseUrl('auth-service')).toBeNull();
+    expect(getMigrationDatabaseUrl('auth-service')).toBeNull();
   });
 
   it('should handle different Docker hostnames', () => {
@@ -52,7 +65,7 @@ describe('getDatabaseUrl', () => {
       DATABASE_URL: 'postgresql://user:pass@offers-db:5432/offers',
     });
 
-    const result = getDatabaseUrl('offers-service');
+    const result = getMigrationDatabaseUrl('offers-service');
 
     expect(result).toBe('postgresql://user:pass@localhost:5432/offers');
   });
@@ -60,7 +73,7 @@ describe('getDatabaseUrl', () => {
   it('should pass service name to loadServiceSecrets', () => {
     mockLoadServiceSecrets.mockReturnValue(null);
 
-    getDatabaseUrl('auth-service');
+    getMigrationDatabaseUrl('auth-service');
 
     expect(mockLoadServiceSecrets).toHaveBeenCalledWith('auth-service');
   });

@@ -34,8 +34,14 @@ export * from './gcp-database-tiers';
 export * from './aws-database-tiers';
 export * from './azure-database-tiers';
 
+// Database users (owner and app role per service, db-init)
+export * from './database-users';
+
 // Template repositories
 export * from './templates';
+
+// Detached workers: the files and scripts register-detached-worker adds
+export * from './workers';
 
 // Kong Gateway constants
 export * from './kong';
@@ -51,3 +57,6 @@ export * from './messaging';
 
 // Prompt constants
 export * from './prompts';
+
+// Agent skills init installs
+export * from './agent-skills';

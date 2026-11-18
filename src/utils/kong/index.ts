@@ -55,3 +55,4 @@ export {
   writeKongBuildContext,
   type WriteKongBuildContextOptions,
 } from './write-kong-build-context';
+export { writeKongPluginsPackage } from './write-kong-plugins-package';

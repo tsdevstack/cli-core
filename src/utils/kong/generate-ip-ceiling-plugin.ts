@@ -14,12 +14,9 @@ import { buildKongRedisConfig } from './build-kong-redis-config';
  * after 910), so requests with invalid keys are counted here too. It bounds
  * key guessing, it is not a usage limit.
  *
- * `hide_client_headers` stays false: on kong:3.8.0 rate-limiting with
- * `hide_client_headers: true` answers 500 instead of 429 once the limit is
- * exceeded (plugins/rate-limiting/handler.lua stores Retry-After from a
- * reset value only computed when headers are shown). tsdevstack-api-key
- * clears the ceiling's headers first thing in its access phase, so clients
- * only see them on the ceiling's own 429.
+ * `hide_client_headers` stays false, so the ceiling's own 429 carries
+ * Retry-After. tsdevstack-api-key clears the ceiling's headers first thing
+ * in its access phase, so clients only see them on that 429.
  *
  * @param ipLimitPerMinute - Requests per minute per client IP
  * @returns Plugin entry

@@ -1,39 +1,48 @@
 /**
- * Optionally set up the tsdevstack agent skills for the user's AI assistant.
+ * Optionally set up agent skills for the user's AI assistant: the tsdevstack
+ * skills, then the curated third-party ones (CURATED_AGENT_SKILLS).
  *
  * Runs after the project is scaffolded: `npx skills` installs into the new
  * project (which must exist first). With an explicit `agent` (from
- * `init --agent <agent>`) the install runs non-interactively — this is the
+ * `init --agent <agent>`) every install runs non-interactively — this is the
  * path AI agents and CI use, where there is no TTY. Without one, the user is
- * prompted interactively, and non-interactive runs just print the manual
- * command. This never fails init — agent skills are an optional extra.
+ * asked once, then the skills CLI asks its own questions for each install
+ * (it remembers the agents picked the first time); non-interactive runs just
+ * print the manual commands. The curated skills install only after the
+ * tsdevstack ones did. This never fails init — agent skills are an optional
+ * extra.
  */
 
-import { spawnSync } from 'child_process';
 import inquirer from 'inquirer';
 import { logger } from '../logger';
 import { isCIEnv } from '../ci';
-
-const SKILLS_SOURCE = 'tsdevstack/skills';
-const MANUAL_HINT = `Set up agent skills anytime: npx skills add ${SKILLS_SOURCE}`;
+import {
+  CURATED_AGENT_SKILLS,
+  TSDEVSTACK_SKILLS_SOURCE,
+} from '../../constants';
+import { runSkillsAdd } from './run-skills-add';
 
 export async function installSkills(
   projectDir: string,
   agent?: string,
 ): Promise<void> {
-  const skillsArgs = ['skills', 'add', SKILLS_SOURCE];
+  // Explicit agent: install without prompting (works with no TTY / in CI).
+  const agentArgs = agent ? ['-a', agent, '-y'] : [];
+  const manualHints = [
+    `Set up agent skills anytime: npx skills add ${TSDEVSTACK_SKILLS_SOURCE}`,
+    ...CURATED_AGENT_SKILLS.map(
+      (skill) => `Add ${skill.name} anytime: npx skills add ${skill.source}`,
+    ),
+  ].join('\n');
 
-  if (agent) {
-    // Explicit agent: install without prompting (works with no TTY / in CI).
-    skillsArgs.push('-a', agent, '-y');
-  } else {
+  if (!agent) {
     const interactive =
       !isCIEnv() &&
       Boolean(process.stdin.isTTY) &&
       Boolean(process.stdout.isTTY);
 
     if (!interactive) {
-      logger.info(MANUAL_HINT);
+      logger.info(manualHints);
       return;
     }
 
@@ -47,7 +56,7 @@ export async function installSkills(
     ]);
 
     if (!(answer.setup as boolean)) {
-      logger.info(MANUAL_HINT);
+      logger.info(manualHints);
       return;
     }
   }
@@ -55,14 +64,24 @@ export async function installSkills(
   logger.newline();
   logger.generating('Installing tsdevstack agent skills...');
 
-  const result = spawnSync('npx', skillsArgs, {
-    cwd: projectDir,
-    stdio: 'inherit',
-  });
+  if (!runSkillsAdd(projectDir, [TSDEVSTACK_SKILLS_SOURCE, ...agentArgs])) {
+    logger.warn('Could not install agent skills.');
+    logger.info(manualHints);
+    return;
+  }
+  logger.success('Agent skills installed');
 
-  if (result.status === 0) {
-    logger.success('Agent skills installed');
-  } else {
-    logger.warn(`Could not install agent skills. ${MANUAL_HINT}`);
+  for (const skill of CURATED_AGENT_SKILLS) {
+    logger.newline();
+    logger.generating(`Installing ${skill.name}...`);
+
+    if (runSkillsAdd(projectDir, [skill.source, ...agentArgs])) {
+      logger.success(`${skill.name} installed`);
+      logger.info(skill.needs);
+    } else {
+      logger.warn(
+        `Could not install ${skill.name}. Add it anytime: npx skills add ${skill.source}`,
+      );
+    }
   }
 }

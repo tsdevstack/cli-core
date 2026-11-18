@@ -34,7 +34,7 @@ export function generateKongService(
       environment: {
         KONG_DATABASE: 'off',
         KONG_DECLARATIVE_CONFIG: '/kong/kong.yml',
-        KONG_PROXY_ACCESS_LOG: '/dev/stdout',
+        // The proxy access log is the image's (probes answered 200 left out)
         KONG_ADMIN_ACCESS_LOG: '/dev/stdout',
         KONG_PROXY_ERROR_LOG: '/dev/stderr',
         KONG_ADMIN_ERROR_LOG: '/dev/stderr',

@@ -9,6 +9,11 @@ import { AZURE_REQUIRED_RESOURCE_PROVIDERS } from '../constants/cloud-providers'
 import { buildKeyVaultName } from '../utils/cloud/azure/build-key-vault-name';
 import { buildKongRuntimeSecretReferences } from '../utils/kong/build-kong-runtime-secret-references';
 import { buildSecretName } from '../utils/secrets/build-secret-name';
+import {
+  buildDatabaseAppRole,
+  parsePostgresUrl,
+  readDbInitSql,
+} from '../utils/database';
 
 /**
  * Create all mock functions for the plugin context
@@ -95,7 +100,29 @@ export function createMockContext() {
     buildKongRuntimeSecretReferences,
     // Pure: the real naming, so plugin tests see the names deploy computes
     buildKeyVaultName,
+    resolveAzureNamingScheme: rs.fn(async () => 'legacy'),
+    resolveKeyVaultName: rs.fn(
+      async (
+        credentials: { subscriptionId: string },
+        projectName: string,
+        env: string,
+        scope?: string,
+      ) =>
+        buildKeyVaultName(
+          projectName,
+          env,
+          { scheme: 'legacy', subscriptionId: credentials.subscriptionId },
+          scope,
+        ),
+    ),
     buildSecretName,
+    buildDatabaseAppRole,
+    parsePostgresUrl,
+    readDbInitSql,
+    DATABASE_APP_ROLE_SUFFIX: '_app',
+    MIGRATION_DATABASE_URL_KEY: 'MIGRATION_DATABASE_URL',
+    AZURE_DB_JOBS_KEY_VAULT_SCOPE: 'dbjobs',
+    AZURE_DB_ADMIN_PASSWORD_SECRET: 'db-admin-password',
     keyVaultExists: rs.fn(),
     ensureKeyVaultExists: rs.fn(),
     createAzureCredential: rs.fn(() => ({})),
@@ -103,7 +130,10 @@ export function createMockContext() {
     AZURE_KEYVAULT_NAME_ENV: 'AZURE_KEYVAULT_NAME',
     AZURE_SERVICE_KEYVAULT_NAME_ENV: 'AZURE_SERVICE_KEYVAULT_NAME',
     KONG_CLOUD_TRACES_ENDPOINT: 'http://localhost:4318/v1/traces',
-    KONG_OPENTELEMETRY_PLUGIN_NAME: 'opentelemetry',
+    KONG_OPENTELEMETRY_PLUGIN_NAME: 'tsdevstack-opentelemetry',
+    KONG_RATE_LIMITING_PLUGIN_NAME: 'rate-limiting',
+    KONG_AWS_PROBE_PATH: '/health',
+    KONG_AZURE_PROBE_PATH: '/status',
     KONG_RUNTIME_SECRETS: [
       'REDIS_PASSWORD',
       'KONG_TRUST_TOKEN',

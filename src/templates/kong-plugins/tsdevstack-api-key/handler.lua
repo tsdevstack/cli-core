@@ -21,7 +21,9 @@
 --   Before anything else, the per-IP ceiling's client headers are cleared
 --   (see CEILING_HEADERS), so clients only see the key's rate-limit headers.
 --   More than 1000 request headers: 400 (a key value could hide past the
---   limit). The key headers are removed from what logging plugins serialize.
+--   limit). Kong's nginx refuses more than 1000 header lines itself
+--   (max_headers, Kong 3.9.4), so this covers a raised limit. The key
+--   headers are removed from what logging plugins serialize.
 --
 -- Fails closed: any Redis error is 503 gateway_unavailable. The plugin sets
 -- no CORS headers (the global cors plugin handles them). Denials are logged
@@ -61,8 +63,8 @@ local WWW_AUTHENTICATE = 'Key realm="tsdevstack"'
 local WINDOW_TITLES = { "Minute", "Hour", "Day", "Week", "Month" }
 
 -- Response headers the per-IP ceiling (service-scoped rate-limiting, minute
--- window) sets in its access phase. It must show them: on kong 3.8.0
--- hide_client_headers = true turns its 429 into a 500. The bundled plugin
+-- window) sets in its access phase. It shows them, so its own 429 carries
+-- Retry-After. The bundled plugin
 -- writes them to ngx.header (kong/pdk/private/rate_limiting.lua), which
 -- kong.response.clear_header removes; they are cleared here before this
 -- plugin sets its own or denies. The ceiling's own 429 never reaches this

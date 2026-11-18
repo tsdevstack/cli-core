@@ -8,7 +8,7 @@ const TRACING = {
 
 describe('getFrameworkGlobalPlugins', () => {
   describe('Standard use cases', () => {
-    it('should return tsdevstack-strip-identity, tsdevstack-client-ip, tsdevstack-trust and opentelemetry', () => {
+    it('should return tsdevstack-strip-identity, tsdevstack-client-ip, tsdevstack-trust and tsdevstack-opentelemetry', () => {
       expect(getFrameworkGlobalPlugins(TRACING)).toEqual([
         { name: 'tsdevstack-strip-identity', config: {} },
         {
@@ -18,7 +18,12 @@ describe('getFrameworkGlobalPlugins', () => {
             client_ip_header: 'X-Tsdevstack-Client-IP',
             token_header: 'X-Tsdevstack-Frontend-Token',
             real_ip_header: 'X-Tsdevstack-Real-IP',
-            trace_headers: ['traceparent', 'tracestate', 'baggage'],
+            trace_headers: [
+              'traceparent',
+              'tracestate',
+              'baggage',
+              'X-Tsdevstack-Traceparent',
+            ],
           },
         },
         {
@@ -29,7 +34,7 @@ describe('getFrameworkGlobalPlugins', () => {
           },
         },
         {
-          name: 'opentelemetry',
+          name: 'tsdevstack-opentelemetry',
           config: {
             traces_endpoint: 'http://localhost:4318/v1/traces',
             sampling_rate: 1,
@@ -39,6 +44,7 @@ describe('getFrameworkGlobalPlugins', () => {
               inject: ['w3c'],
               default_format: 'w3c',
             },
+            traceparent_copy_header: 'X-Tsdevstack-Traceparent',
           },
         },
       ]);

@@ -117,6 +117,8 @@ const image = `${prefix}-kong`;
 const echoName = `${prefix}-echo`;
 const redisName = `${prefix}-redis`;
 const kongName = `${prefix}-kong`;
+/** Same image, nginx's header limit raised (KONG_NGINX_HTTP_MAX_HEADERS) */
+const raisedKongName = `${prefix}-kong-raised`;
 const echoUrl = `http://${echoName}:3000`;
 
 /** What the echo upstream received */
@@ -222,8 +224,10 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
   let echo: RunningContainer | undefined;
   let redisContainer: RunningContainer | undefined;
   let kong: RunningContainer | undefined;
+  let raisedKong: RunningContainer | undefined;
   let redis: Redis;
   let proxyUrl: string;
+  let raisedProxyUrl: string;
 
   async function send(
     requestPath: string,
@@ -245,8 +249,9 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
   function sendRawHeaders(
     requestPath: string,
     rawHeaders: string[],
+    baseUrl = proxyUrl,
   ): Promise<{ status: number; body: string; wwwAuthenticate?: string }> {
-    const url = new URL(proxyUrl);
+    const url = new URL(baseUrl);
     return new Promise((resolve, reject) => {
       const req = http.request(
         {
@@ -422,10 +427,34 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
         `KONG_FRONTEND_TOKEN=${FRONTEND_TOKEN}`,
         image,
       ]);
+      raisedKong = startAttachedContainer(raisedKongName, [
+        '--network',
+        network,
+        '-p',
+        '127.0.0.1::8080',
+        '-p',
+        '127.0.0.1::8100',
+        '-e',
+        `REDIS_PASSWORD=${REDIS_PASSWORD}`,
+        '-e',
+        `KONG_TRUST_TOKEN=${TRUST_TOKEN}`,
+        '-e',
+        `KONG_FRONTEND_TOKEN=${FRONTEND_TOKEN}`,
+        '-e',
+        'KONG_NGINX_HTTP_MAX_HEADERS=2000',
+        image,
+      ]);
       const statusPort = await getContainerHostPort(kongName, 8100);
       const proxyPort = await getContainerHostPort(kongName, 8080);
       proxyUrl = `http://127.0.0.1:${proxyPort}`;
       await waitForHttpOk(`http://127.0.0.1:${statusPort}/status/ready`, kong);
+      const raisedStatusPort = await getContainerHostPort(raisedKongName, 8100);
+      const raisedProxyPort = await getContainerHostPort(raisedKongName, 8080);
+      raisedProxyUrl = `http://127.0.0.1:${raisedProxyPort}`;
+      await waitForHttpOk(
+        `http://127.0.0.1:${raisedStatusPort}/status/ready`,
+        raisedKong,
+      );
     },
     BUILD_TIMEOUT_MS + START_TIMEOUT_MS * 3,
   );
@@ -433,6 +462,7 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
   afterAll(async () => {
     redis?.disconnect();
     await stopAttachedContainer(kongName, kong);
+    await stopAttachedContainer(raisedKongName, raisedKong);
     await stopAttachedContainer(echoName, echo);
     await stopAttachedContainer(redisName, redisContainer);
     spawnSync('docker', ['network', 'rm', network], { stdio: 'ignore' });
@@ -652,30 +682,68 @@ describe.skipIf(!dockerAvailable)('tsdevstack-api-key plugin (Docker)', () => {
       TEST_TIMEOUT_MS,
     );
 
+    /** 1001 filler header lines */
+    function manyHeaders(): string[] {
+      const many: string[] = [];
+      for (let i = 0; i < 1001; i++) {
+        many.push(`x-filler-${i}`, '1');
+      }
+      return many;
+    }
+
     it(
       'should answer 400 to requests with more than 1000 headers',
       async () => {
         const { key } = await seedKey();
-        const many: string[] = [];
-        for (let i = 0; i < 1001; i++) {
-          many.push(`x-filler-${i}`, '1');
-        }
+        const many = manyHeaders();
+
+        // Kong's nginx refuses more than 1000 header lines (max_headers,
+        // Kong 3.9.4) before any plugin runs
         const reply = await sendRawHeaders(PARTNER_PATH, [
           ...many,
           'x-api-key',
           key,
         ]);
+        const publicReply = await sendRawHeaders(
+          '/offers/v1/plans/featured',
+          many,
+        );
+
+        expect(reply.status).toBe(400);
+        expect(reply.body).toContain('Request header or cookie too large');
+        expect(publicReply.status).toBe(400);
+      },
+      TEST_TIMEOUT_MS,
+    );
+
+    it(
+      "should answer 400 too_many_headers when nginx's header limit is raised",
+      async () => {
+        const { key } = await seedKey();
+        const many = manyHeaders();
+
+        const reply = await sendRawHeaders(
+          PARTNER_PATH,
+          [...many, 'x-api-key', key],
+          raisedProxyUrl,
+        );
+        // The strip plugin runs first on every route
+        const publicReply = await sendRawHeaders(
+          '/offers/v1/plans/featured',
+          many,
+          raisedProxyUrl,
+        );
+
         expect(reply.status).toBe(400);
         expect(JSON.parse(reply.body)).toEqual({
           error: 'too_many_headers',
           message: 'Too many request headers',
         });
-        // The strip plugin runs first on every route
-        const publicReply = await sendRawHeaders(
-          '/offers/v1/plans/featured',
-          many,
-        );
         expect(publicReply.status).toBe(400);
+        expect(JSON.parse(publicReply.body)).toEqual({
+          error: 'too_many_headers',
+          message: 'Too many request headers',
+        });
       },
       TEST_TIMEOUT_MS,
     );

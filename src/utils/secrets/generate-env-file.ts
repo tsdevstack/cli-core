@@ -8,6 +8,7 @@ import { LOCAL_SECRETS_FILE, USER_SECRETS_FILE } from '../../constants';
 import { findProjectRoot } from '../paths';
 import { writeTextFile } from '../fs';
 import { loadLocalSecretsFile } from './load-local-secrets-file';
+import { pickOwnerDatabaseUrl } from '../database/pick-owner-database-url';
 
 /**
  * Generate .env file from .secrets.local.json
@@ -42,31 +43,26 @@ export function generateEnvFile(rootDir: string = findProjectRoot()): void {
   }
 
   // 2. Extract DB user/password for docker-compose.yml (needed for container env vars)
-  // These are extracted from service DATABASE_URLs but named *_DB_USER, *_DB_PASSWORD
+  // These are the owner's (MIGRATION_DATABASE_URL, the container's superuser),
+  // named *_DB_USER, *_DB_PASSWORD
   // IMPORTANT: Matches docker-compose generator pattern (removes -service suffix)
   for (const [serviceName, serviceConfig] of Object.entries(secretsFile)) {
     if (serviceName === 'secrets' || serviceName.startsWith('$')) continue;
 
-    if (
-      serviceConfig &&
-      typeof serviceConfig === 'object' &&
-      'DATABASE_URL' in serviceConfig
-    ) {
-      const dbUrl = serviceConfig.DATABASE_URL as string;
-      if (typeof dbUrl === 'string') {
-        // Extract user and password from postgresql://user:password@host:port/database
-        const match = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@/);
-        if (match) {
-          // Remove -service suffix to match docker-compose generator
-          // auth-service → auth → AUTH_DB_USER
-          const dbName = serviceName
-            .replace(/-service$/, '')
-            .replace(/-/g, '_')
-            .toUpperCase();
-          secrets[`${dbName}_DB_USER`] = match[1];
-          // URL-decode the password (it's URL-encoded in DATABASE_URL but Docker needs raw value)
-          secrets[`${dbName}_DB_PASSWORD`] = decodeURIComponent(match[2]);
-        }
+    const dbUrl = pickOwnerDatabaseUrl(serviceConfig);
+    if (dbUrl) {
+      // Extract user and password from postgresql://user:password@host:port/database
+      const match = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@/);
+      if (match) {
+        // Remove -service suffix to match docker-compose generator
+        // auth-service → auth → AUTH_DB_USER
+        const dbName = serviceName
+          .replace(/-service$/, '')
+          .replace(/-/g, '_')
+          .toUpperCase();
+        secrets[`${dbName}_DB_USER`] = match[1];
+        // URL-decode the password (it's URL-encoded in the URL but Docker needs raw value)
+        secrets[`${dbName}_DB_PASSWORD`] = decodeURIComponent(match[2]);
       }
     }
   }

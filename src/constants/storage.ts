@@ -34,8 +34,16 @@ export const LOCAL_STORAGE_INIT_IMAGE = 'peakcom/s5cmd:v2.3.0';
 /** Maximum length for a bucket logical name */
 export const BUCKET_NAME_MAX_LENGTH = 30;
 
-/** Maximum length for a cloud bucket name ({project}-{name}-{env}) */
+/** Maximum length for a cloud bucket name ({project}-{name}-{env}{account suffix}) */
 export const CLOUD_BUCKET_NAME_MAX_LENGTH = 63;
+
+/**
+ * Longest account part a cloud adds to a bucket name: AWS adds
+ * `-{12-digit account ID}` (13 characters), GCP `-{6-character suffix}` in
+ * environments with unique names. The length check counts it, so a bucket
+ * name accepted here fits every cloud.
+ */
+export const CLOUD_BUCKET_ACCOUNT_SUFFIX_MAX_LENGTH = 13;
 
 /** Maximum length for Azure storage account name */
 export const AZURE_STORAGE_ACCOUNT_NAME_MAX_LENGTH = 24;

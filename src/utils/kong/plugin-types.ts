@@ -116,14 +116,18 @@ export interface ClientIpPluginConfig {
 }
 
 /**
- * Kong's bundled opentelemetry plugin configuration (the fields we set)
+ * tsdevstack-opentelemetry configuration (the fields of Kong's bundled
+ * opentelemetry plugin that we set)
  */
 export interface OpenTelemetryPluginConfig {
-  name: 'opentelemetry';
+  name: 'tsdevstack-opentelemetry';
   config: {
     /** OTLP/HTTP traces URL: Jaeger locally, the collector sidecar in the cloud */
     traces_endpoint: string;
-    /** Share of new traces kept (tracing.sampleRate) */
+    /**
+     * Share of new traces kept (tracing.sampleRate); a trace the frontend
+     * already sampled is always kept
+     */
     sampling_rate: number;
     resource_attributes: Record<string, string>;
     propagation: {
@@ -131,6 +135,11 @@ export interface OpenTelemetryPluginConfig {
       inject: string[];
       default_format: string;
     };
+    /**
+     * Header with a copy of traceparent: read instead of traceparent when a
+     * request has it, and set to the traceparent Kong sends upstream
+     */
+    traceparent_copy_header: string;
   };
 }
 

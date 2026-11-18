@@ -36,6 +36,13 @@ describe('generateKongService', () => {
     expect(env.KONG_DECLARATIVE_CONFIG).toBe('/kong/kong.yml');
   });
 
+  it("should keep the image's proxy access log (probes answered 200 left out)", () => {
+    const result = generateKongService('net', 'shop');
+    const env = result.gateway.environment as Record<string, string>;
+
+    expect(env).not.toHaveProperty('KONG_PROXY_ACCESS_LOG');
+  });
+
   it('should override the image defaults (proxy 8080, Admin API off) for local development', () => {
     const result = generateKongService('net', 'shop');
     const env = result.gateway.environment as Record<string, string>;

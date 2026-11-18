@@ -49,3 +49,17 @@ export interface AzureCredentials {
   subscriptionId: string;
   location: string;
 }
+
+/**
+ * How an Azure environment names the resources whose names are unique
+ * worldwide: `legacy` (deployed with v0.12.0 or earlier, keeps every name)
+ * or `unique` (the subscription's account suffix). See
+ * resolveAzureNamingScheme.
+ */
+export type AzureNamingScheme = 'legacy' | 'unique';
+
+/** What a Key Vault name needs besides the project, environment and scope */
+export interface AzureNaming {
+  scheme: AzureNamingScheme;
+  subscriptionId: string;
+}

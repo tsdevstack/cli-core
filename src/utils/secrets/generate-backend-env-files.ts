@@ -2,7 +2,7 @@
  * Generate .env files for backend NestJS services
  *
  * Backend services get their secrets from SecretsService at runtime,
- * but Prisma Studio needs DATABASE_URL in a local .env file.
+ * but Prisma's tools need DATABASE_URL in a local .env file.
  */
 
 import * as path from 'path';
@@ -13,12 +13,15 @@ import { getServicePath } from '../paths/get-service-path';
 import { writeTextFile, readJsonFile } from '../fs';
 import type { FrameworkConfig } from '../config';
 import type { SecretsFile } from './types';
+import { pickOwnerDatabaseUrl } from '../database/pick-owner-database-url';
 
 /**
  * Generate .env file for a single backend service
  *
- * Only includes DATABASE_URL for Prisma Studio/Prisma CLI tools.
- * The running service gets all its environment variables from SecretsService.
+ * Only includes DATABASE_URL for Prisma Studio/Prisma CLI tools: the owner
+ * role's URL (MIGRATION_DATABASE_URL), since migrations change the schema.
+ * The running service gets all its environment variables from SecretsService
+ * (its DATABASE_URL is the app role's).
  *
  * @param serviceName - Name of the backend service
  * @param serviceSecrets - Secrets for this service from .secrets.local.json
@@ -27,11 +30,14 @@ import type { SecretsFile } from './types';
 function generateServiceEnvFile(
   serviceName: string,
   serviceSecrets: Record<string, unknown>,
-  rootDir: string
+  rootDir: string,
 ): void {
-  // Check if service has DATABASE_URL
-  if (!serviceSecrets.DATABASE_URL) {
-    // Skip services without DATABASE_URL
+  // Prisma's tools change the schema: they connect as the owner role
+  // (MIGRATION_DATABASE_URL), under the name Prisma reads, DATABASE_URL. The
+  // running service connects as the app role.
+  const ownerUrl = pickOwnerDatabaseUrl(serviceSecrets);
+  if (!ownerUrl) {
+    // Skip services without a database
     return;
   }
 
@@ -42,13 +48,15 @@ function generateServiceEnvFile(
 # Generated from: ${LOCAL_SECRETS_FILE}
 # Generated at: ${new Date().toISOString()}
 #
-# This file is used by Prisma Studio and Prisma CLI tools only.
-# The running service gets its environment variables from SecretsService.
+# This file is used by Prisma Studio and Prisma CLI tools only. DATABASE_URL
+# here is the owner role's (MIGRATION_DATABASE_URL): migrations change the
+# schema. The running service gets its environment variables from
+# SecretsService, and connects as the app role.
 #
 # This file is automatically created and OVERWRITTEN when you run:
 #   npx tsdevstack generate-secrets
 #
-# To modify DATABASE_URL:
+# To modify it:
 #   1. Edit .secrets.user.json
 #   2. Run: npx tsdevstack generate-secrets
 #   3. This file will be regenerated automatically
@@ -60,10 +68,8 @@ function generateServiceEnvFile(
 
   const envLines: string[] = [header];
 
-  // Only include DATABASE_URL
-  if (typeof serviceSecrets.DATABASE_URL === 'string') {
-    envLines.push(`DATABASE_URL="${serviceSecrets.DATABASE_URL}"`);
-  }
+  // Only include DATABASE_URL, the owner's
+  envLines.push(`DATABASE_URL="${ownerUrl}"`);
 
   // Write to .env in service directory
   const servicePath = getServicePath(serviceName, rootDir);
@@ -82,7 +88,7 @@ function generateServiceEnvFile(
  */
 export function generateBackendEnvFiles(
   config: FrameworkConfig,
-  rootDir: string = findProjectRoot()
+  rootDir: string = findProjectRoot(),
 ): void {
   // Load structured secrets from .secrets.local.json
   const secretsPath = path.join(rootDir, LOCAL_SECRETS_FILE);
@@ -104,12 +110,18 @@ export function generateBackendEnvFiles(
     const serviceSection = secretsFile[service.name];
 
     if (!serviceSection || typeof serviceSection !== 'object') {
-      logger.warn(`No secrets found for ${service.name} in ${LOCAL_SECRETS_FILE}`);
+      logger.warn(
+        `No secrets found for ${service.name} in ${LOCAL_SECRETS_FILE}`,
+      );
       continue;
     }
 
     // Generate .env file for this service (only if it has DATABASE_URL)
-    generateServiceEnvFile(service.name, serviceSection as Record<string, unknown>, rootDir);
+    generateServiceEnvFile(
+      service.name,
+      serviceSection as Record<string, unknown>,
+      rootDir,
+    );
   }
 
   if (backendCount === 0) {

@@ -6,12 +6,14 @@ import { findProjectRoot } from '../paths';
 import type { Secrets } from './types';
 import { loadLocalSecretsFile } from './load-local-secrets-file';
 import { toScreamingSnakeCase } from './to-screaming-snake-case';
+import { pickOwnerDatabaseUrl } from '../database/pick-owner-database-url';
 
 /**
  * Load .secrets.local.json and flatten to simple key-value pairs
- * Handles nested objects like REDIS and extracts DB passwords from DATABASE_URLs
+ * Handles nested objects like REDIS and extracts the owner's DB user and
+ * password (MIGRATION_DATABASE_URL, or DATABASE_URL in older secrets)
  *
- * @param extractDbPasswords - Whether to extract DB passwords from DATABASE_URLs (default: false)
+ * @param extractDbPasswords - Whether to extract the owner's DB user and password (default: false)
  * @param rootDir - Project root directory (defaults to findProjectRoot())
  * @returns Flattened secrets as Secrets (Record<string, string>)
  * @throws {CliError} If secrets file not found
@@ -53,28 +55,25 @@ export function loadLocalSecrets(
         if (typeof value === 'string') {
           resolved[key] = value;
         }
+      }
 
-        // Optionally extract DB passwords from DATABASE_URLs
-        if (
-          extractDbPasswords &&
-          key === 'DATABASE_URL' &&
-          typeof value === 'string'
-        ) {
-          // Extract password from postgresql://user:password@host:port/db
-          const match = value.match(/postgresql:\/\/([^:]+):([^@]+)@/);
-          if (match) {
-            const username = match[1];
-            const password = match[2];
-            // Store as SERVICE_DB_PASSWORD (e.g., AUTH_DB_PASSWORD)
-            // Remove '-service' suffix first, then convert to SCREAMING_SNAKE_CASE
-            const serviceNameWithoutSuffix = serviceName.replace(
-              /-service$/,
-              '',
-            );
-            const prefix = toScreamingSnakeCase(serviceNameWithoutSuffix);
-            resolved[`${prefix}_DB_PASSWORD`] = password;
-            resolved[`${prefix}_DB_USER`] = username;
-          }
+      // Optionally extract the owner's DB user and password (the
+      // container's superuser) from MIGRATION_DATABASE_URL
+      const ownerUrl = extractDbPasswords
+        ? pickOwnerDatabaseUrl(serviceConfig)
+        : undefined;
+      if (ownerUrl) {
+        // Extract password from postgresql://user:password@host:port/db
+        const match = ownerUrl.match(/postgresql:\/\/([^:]+):([^@]+)@/);
+        if (match) {
+          const username = match[1];
+          const password = match[2];
+          // Store as SERVICE_DB_PASSWORD (e.g., AUTH_DB_PASSWORD)
+          // Remove '-service' suffix first, then convert to SCREAMING_SNAKE_CASE
+          const serviceNameWithoutSuffix = serviceName.replace(/-service$/, '');
+          const prefix = toScreamingSnakeCase(serviceNameWithoutSuffix);
+          resolved[`${prefix}_DB_PASSWORD`] = password;
+          resolved[`${prefix}_DB_USER`] = username;
         }
       }
     }

@@ -53,6 +53,25 @@ describe('generateEnvFile', () => {
       );
     });
 
+    it('should start each Postgres container as the owner, not the app role', () => {
+      rs.mocked(loadLocalSecretsModule.loadLocalSecretsFile).mockReturnValue({
+        secrets: {},
+        'auth-service': {
+          DATABASE_URL:
+            'postgresql://auth-service_app:app@localhost:5432/auth-service',
+          MIGRATION_DATABASE_URL:
+            'postgresql://auth-service:owner%2Bpw@localhost:5432/auth-service',
+        },
+      });
+
+      generateEnvFile(mockRootDir);
+
+      const written = rs.mocked(fsModule.writeTextFile).mock.calls[0][1];
+      expect(written).toContain('AUTH_DB_USER=auth-service');
+      expect(written).toContain('AUTH_DB_PASSWORD=owner+pw');
+      expect(written).not.toContain('auth-service_app');
+    });
+
     it('should load secrets from loadLocalSecretsFile', () => {
       rs.mocked(loadLocalSecretsModule.loadLocalSecretsFile).mockReturnValue({
         secrets: {},

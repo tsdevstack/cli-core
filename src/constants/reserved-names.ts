@@ -20,8 +20,9 @@ export const RESERVED_NAMES = [
   'shared',
   'secrets',
   // Azure: the shared Key Vault is {project}-{env}-kv, a service's vault
-  // {project}-{env}-{service}
+  // {project}-{env}-{service}, the database jobs' {project}-{env}-dbjobs
   'kv',
+  'dbjobs',
 ] as const;
 
 /**

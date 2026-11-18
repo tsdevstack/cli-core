@@ -67,6 +67,30 @@ describe('generateBackendEnvFiles', () => {
     expect(mockLogger.success).toHaveBeenCalled();
   });
 
+  it("should give Prisma's tools the owner's URL under the name DATABASE_URL", () => {
+    const config: FrameworkConfig = {
+      project: { name: 'test', version: '1.0.0' },
+      cloud: { provider: 'gcp' },
+      services: [{ name: 'auth-service', type: 'nestjs', port: 3000 }],
+    };
+    mockReadJsonFile.mockReturnValue({
+      secrets: {},
+      'auth-service': {
+        DATABASE_URL: 'postgresql://auth-service_app:a@localhost:5432/auth',
+        MIGRATION_DATABASE_URL:
+          'postgresql://auth-service:o@localhost:5432/auth',
+      },
+    });
+
+    generateBackendEnvFiles(config, '/project');
+
+    const [, content] = mockWriteTextFile.mock.calls[0];
+    expect(content).toContain(
+      'DATABASE_URL="postgresql://auth-service:o@localhost:5432/auth"',
+    );
+    expect(content).not.toContain('auth-service_app');
+  });
+
   it('should skip services without DATABASE_URL', () => {
     const config: FrameworkConfig = {
       project: { name: 'test', version: '1.0.0' },

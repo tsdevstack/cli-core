@@ -51,6 +51,15 @@ import {
   KONG_RUNTIME_SECRETS,
   KONG_CLOUD_TRACES_ENDPOINT,
   KONG_OPENTELEMETRY_PLUGIN_NAME,
+  KONG_RATE_LIMITING_PLUGIN_NAME,
+  KONG_PLUGINS_VERSION,
+  KONG_PLUGINS_IMAGE,
+  KONG_AWS_PROBE_PATH,
+  KONG_AZURE_PROBE_PATH,
+  DATABASE_APP_ROLE_SUFFIX,
+  MIGRATION_DATABASE_URL_KEY,
+  AZURE_DB_JOBS_KEY_VAULT_SCOPE,
+  AZURE_DB_ADMIN_PASSWORD_SECRET,
 } from '../constants';
 
 // Credentials utilities
@@ -79,10 +88,18 @@ import { loadUserSecrets } from '../utils/secrets/load-user-secrets';
 import { loadFrameworkSecrets } from '../utils/secrets/load-framework-secrets';
 import { generateServiceUrls } from '../utils/secrets/generate-service-urls';
 import { buildSecretName } from '../utils/secrets/build-secret-name';
+import {
+  buildDatabaseAppRole,
+  parsePostgresUrl,
+  readDbInitSql,
+} from '../utils/database';
 import { getSecretScope } from '../utils/secrets/get-secret-scope';
 import { buildKeyVaultName } from '../utils/cloud/azure/build-key-vault-name';
+import { resolveAzureNamingScheme } from '../utils/cloud/azure/resolve-azure-naming-scheme';
+import { resolveKeyVaultName } from '../utils/cloud/azure/resolve-key-vault-name';
 import { keyVaultExists } from '../utils/cloud/azure/key-vault-exists';
 import { ensureKeyVaultExists } from '../utils/cloud/azure/ensure-key-vault-exists';
+import { setKeyVaultSecret } from '../utils/cloud/azure/set-key-vault-secret';
 import { createAzureCredential } from '../utils/cloud/azure/create-azure-credential';
 
 // Exec utilities
@@ -108,6 +125,7 @@ import {
   listKongPluginDirs,
   stageKongPlugins,
   writeKongBuildContext,
+  writeKongPluginsPackage,
   buildFrameworkKongConfig,
   validateRequestTransformerHeaders,
   validateStripIdentityPlugin,
@@ -158,6 +176,15 @@ export const pluginContext = {
   KONG_RUNTIME_SECRETS,
   KONG_CLOUD_TRACES_ENDPOINT,
   KONG_OPENTELEMETRY_PLUGIN_NAME,
+  KONG_RATE_LIMITING_PLUGIN_NAME,
+  KONG_PLUGINS_VERSION,
+  KONG_PLUGINS_IMAGE,
+  KONG_AWS_PROBE_PATH,
+  KONG_AZURE_PROBE_PATH,
+  DATABASE_APP_ROLE_SUFFIX,
+  MIGRATION_DATABASE_URL_KEY,
+  AZURE_DB_JOBS_KEY_VAULT_SCOPE,
+  AZURE_DB_ADMIN_PASSWORD_SECRET,
 
   // Error handling
   CliError,
@@ -186,10 +213,18 @@ export const pluginContext = {
   loadFrameworkSecrets,
   generateServiceUrls,
   buildSecretName,
+
+  // Database users (db-init)
+  buildDatabaseAppRole,
+  parsePostgresUrl,
+  readDbInitSql,
   getSecretScope,
   buildKeyVaultName,
+  resolveAzureNamingScheme,
+  resolveKeyVaultName,
   keyVaultExists,
   ensureKeyVaultExists,
+  setKeyVaultSecret,
   createAzureCredential,
 
   // Exec utilities
@@ -214,6 +249,7 @@ export const pluginContext = {
   listKongPluginDirs,
   stageKongPlugins,
   writeKongBuildContext,
+  writeKongPluginsPackage,
   buildFrameworkKongConfig,
   validateRequestTransformerHeaders,
   validateStripIdentityPlugin,

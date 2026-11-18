@@ -60,7 +60,8 @@ function StripIdentityHandler:access(conf)
   local headers, err = kong.request.get_headers(MAX_REQUEST_HEADERS)
   if err == "truncated" then
     -- Headers past the limit cannot be checked, so the request's identity
-    -- headers cannot be trusted
+    -- headers cannot be trusted. Kong's nginx refuses more than 1000 header
+    -- lines itself (max_headers, Kong 3.9.4): this covers a raised limit.
     return kong.response.exit(400, {
       error = "too_many_headers",
       message = "Too many request headers",

@@ -22,9 +22,10 @@ export const KONG_OIDC_CLIENT_SECRET = 'kong-secret';
 
 /**
  * Base image of the generated Kong Dockerfile (local and cloud).
- * 3.8.0 is the only 3.8 patch release on Docker Hub.
+ * 3.9 is Kong's last open-source line (3.10 and later are Enterprise only);
+ * 3.9.4 is its newest patch release on Docker Hub.
  */
-export const KONG_BASE_IMAGE = 'kong:3.8.0';
+export const KONG_BASE_IMAGE = 'kong:3.9.4';
 
 /**
  * lua-resty-openidc tag installed into the Kong image (dependency of kong-oidc-v3).
@@ -42,7 +43,7 @@ export const KONG_OIDC_V3_COMMIT = '5c5397ac1ea2848401d73758244ba626afb04a17';
 export const KONG_OIDC_PLUGIN_NAME = 'oidc';
 
 /**
- * Plugins bundled with the kong:3.8.0 image (`plugins` list in
+ * Plugins bundled with the kong:3.9.4 image (`plugins` list in
  * kong/constants.lua). Enabled through `bundled` in KONG_PLUGINS; a custom
  * plugin with one of these names would shadow the bundled one.
  */
@@ -91,6 +92,7 @@ export const KONG_BUNDLED_PLUGINS = [
   'ai-request-transformer',
   'ai-response-transformer',
   'standard-webhooks',
+  'redirect',
 ] as const;
 
 /**
@@ -119,6 +121,49 @@ export const KONG_LOCAL_BUILD_CONTEXT = 'infrastructure/kong';
 export const KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR = 'kong-plugins';
 
 /**
+ * Version of the framework's Kong plugins, published as the public plugins
+ * repo (tag `v<version>`), the LuaRocks packages (`<version>-1`) and the
+ * image (KONG_PLUGINS_IMAGE). Its own semver: patch for a fix, minor for a
+ * new setting, major for a breaking change. Each CLI release ships this
+ * version, so the CLI pins its plugins. Bump it with every change to a
+ * plugin or to the image's base layers (Kong, the OIDC plugin); the
+ * fingerprint test says when.
+ */
+export const KONG_PLUGINS_VERSION = '1.0.0';
+
+/**
+ * sha256 of the plugin files and the image's base layers at
+ * KONG_PLUGINS_VERSION (computeKongPluginsFingerprint). A change without a
+ * version bump fails its test.
+ */
+export const KONG_PLUGINS_FINGERPRINT =
+  '5afe70870c7abf4469b19aea4b244138ca80279e33ca690b8c00b4a98a21c5a9';
+
+/** The public plugins repo (the sync assembles it, see kong-plugins/) */
+export const KONG_PLUGINS_REPO_URL =
+  'https://github.com/tsdevstack/kong-plugins';
+
+/** The public image: Kong, the OIDC plugin and the framework plugins */
+export const KONG_PLUGINS_IMAGE = 'ghcr.io/tsdevstack/kong';
+
+/** One line per framework plugin, for its LuaRocks package */
+export const KONG_FRAMEWORK_PLUGIN_SUMMARIES: Readonly<Record<string, string>> =
+  {
+    'tsdevstack-api-key':
+      'API keys checked against Redis, with per-key limits per time window',
+    'tsdevstack-api-prefix':
+      'Removes a public path prefix before a request goes upstream',
+    'tsdevstack-client-ip':
+      "Rate limits a trusted server's calls per visitor, by the address it forwards",
+    'tsdevstack-opentelemetry':
+      "Kong's OpenTelemetry plugin with parent-based sampling",
+    'tsdevstack-strip-identity':
+      'Removes identity headers a client sent, before any auth plugin runs',
+    'tsdevstack-trust':
+      'Adds a shared trust token to every request Kong sends upstream',
+  };
+
+/**
  * KONG_PLUGINS keyword that enables every bundled plugin.
  */
 export const KONG_PLUGINS_BUNDLED_KEYWORD = 'bundled';
@@ -138,7 +183,7 @@ export const KONG_PLUGIN_REQUIRED_FILES = [
 ] as const;
 
 /**
- * Proxy request body limit for local development. Kong 3.8.0's own default
+ * Proxy request body limit for local development. Kong 3.9.4's own default
  * (`nginx_http_client_max_body_size = 0` in kong/templates/kong_defaults.lua,
  * unlimited). The generated image bakes the cloud value (maxUploadSize from
  * infrastructure.json, default 10m); docker-compose restores Kong's default.
@@ -174,6 +219,27 @@ export const KONG_OIDC_SHARED_DICTS = [
  */
 export const KONG_NGINX_HTTP_INCLUDE_FILE =
   '/etc/kong/tsdevstack-nginx-http.conf';
+
+/**
+ * Kong routes the cloud load balancers probe, answered by Kong itself
+ * (request-termination, 200, no upstream): the AWS target group asks
+ * /health, Azure Front Door /status. infra-core's ALB and Front Door
+ * generators name the same paths. Their 200 answers are left out of the
+ * access log (KONG_ACCESS_LOG_CONDITION_VARIABLE).
+ */
+export const KONG_AWS_PROBE_PATH = '/health';
+export const KONG_AZURE_PROBE_PATH = '/status';
+
+/**
+ * nginx variable the proxy access log's `if=` reads: 0 for a load balancer
+ * probe answered 200, 1 for every other request. A map in
+ * KONG_NGINX_HTTP_INCLUDE_FILE sets it. Probes come every 30 s from each
+ * prober and would bury real traffic; the services log theirs at debug.
+ */
+export const KONG_ACCESS_LOG_CONDITION_VARIABLE = 'tsdevstack_access_log';
+
+/** Kong's own access log format (its nginx template defines it) */
+export const KONG_ACCESS_LOG_FORMAT = 'kong_log_format';
 
 /**
  * First line of the generated Kong Dockerfile and .dockerignore. A local
@@ -228,10 +294,19 @@ export const KONG_FRONTEND_TOKEN_SECRET = 'KONG_FRONTEND_TOKEN';
 export const KONG_UPSTREAM_CLIENT_IP_HEADER = 'X-Tsdevstack-Real-IP';
 
 /**
- * Kong's bundled OpenTelemetry plugin, a framework global plugin: Kong's
- * spans, and the trace passed on to the services (W3C traceparent)
+ * Kong's tracing plugin, a framework global plugin: Kong's spans, and the
+ * trace passed on to the services (W3C traceparent). Kong's bundled
+ * OpenTelemetry plugin with parent-based sampling (a trace the frontend
+ * already sampled is kept). Source: templates/kong-plugins/tsdevstack-opentelemetry.
  */
-export const KONG_OPENTELEMETRY_PLUGIN_NAME = 'opentelemetry';
+export const KONG_OPENTELEMETRY_PLUGIN_NAME = 'tsdevstack-opentelemetry';
+
+/**
+ * Kong's bundled OpenTelemetry plugin, which KONG_OPENTELEMETRY_PLUGIN_NAME
+ * runs. Not allowed as a user global plugin next to it: Kong would trace
+ * every request twice.
+ */
+export const KONG_BUNDLED_OPENTELEMETRY_PLUGIN_NAME = 'opentelemetry';
 
 /** Where Kong sends its spans locally: Jaeger on the docker-compose network */
 export const KONG_LOCAL_TRACES_ENDPOINT = 'http://jaeger:4318/v1/traces';
@@ -250,6 +325,16 @@ export const KONG_CLOUD_TRACES_ENDPOINT = 'http://localhost:4318/v1/traces';
 export const KONG_TRACING_INSTRUMENTATIONS = 'request,balancer';
 
 /**
+ * A copy of the W3C traceparent (tsdevstack-opentelemetry's
+ * traceparent_copy_header). A platform in front of a container can rewrite
+ * traceparent: Cloud Run points it at its own span, with its own sampling
+ * decision. It doesn't touch this header, so each hop continues the trace
+ * its caller sent: the frontend sends it to Kong, Kong to the services.
+ * @tsdevstack/telemetry sends and reads the same name.
+ */
+export const KONG_TRACEPARENT_COPY_HEADER = 'X-Tsdevstack-Traceparent';
+
+/**
  * Trace headers Kong drops from requests that do not carry the frontend
  * token (tsdevstack-client-ip), so outside clients cannot pick trace IDs or
  * force sampling. Calls from the frontend keep them: its trace continues.
@@ -258,6 +343,7 @@ export const KONG_CLIENT_TRACE_HEADERS = [
   'traceparent',
   'tracestate',
   'baggage',
+  KONG_TRACEPARENT_COPY_HEADER,
 ] as const;
 
 /**

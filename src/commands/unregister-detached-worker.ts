@@ -111,8 +111,14 @@ export async function unregisterDetachedWorker(
 
   logger.info('Next steps:');
   logger.info('  1. Commit your changes');
-  logger.info('  2. (Optional) Delete worker files if no longer needed:');
+  logger.info(
+    '  2. (Optional) Delete the worker code if no longer needed (this command never deletes code):',
+  );
   logger.info(`     - apps/${worker.baseService}/src/worker.ts`);
   logger.info(`     - apps/${worker.baseService}/src/worker.module.ts`);
+  logger.info(`     - apps/${worker.baseService}/tsconfig.worker.json`);
+  logger.info(
+    `     - the start-worker and start-worker:dev scripts in apps/${worker.baseService}/package.json`,
+  );
   logger.newline();
 }

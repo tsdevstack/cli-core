@@ -9,6 +9,7 @@ import {
   BUCKET_NAME_MAX_LENGTH,
   BUCKET_RESERVED_NAMES,
   CLOUD_BUCKET_NAME_MAX_LENGTH,
+  CLOUD_BUCKET_ACCOUNT_SUFFIX_MAX_LENGTH,
   NAME_LENGTH,
 } from '../../constants';
 import type { FrameworkConfig } from '../config';
@@ -110,7 +111,8 @@ export function validateBucketName(
     );
   }
 
-  // Validate cloud bucket name length: {project}-{name}-{env} ≤ 63 chars
+  // Validate cloud bucket name length: {project}-{name}-{env} plus the
+  // longest account suffix a cloud adds (AWS's -{account ID}) ≤ 63 chars
   const environmentNames = config.environments
     ? Object.keys(config.environments)
     : STANDARD_ENVIRONMENTS;
@@ -119,10 +121,12 @@ export function validateBucketName(
     '',
   );
   const cloudBucketName = `${config.project.name}-${name}-${longestEnvName}`;
-  if (cloudBucketName.length > CLOUD_BUCKET_NAME_MAX_LENGTH) {
+  const maxBaseLength =
+    CLOUD_BUCKET_NAME_MAX_LENGTH - CLOUD_BUCKET_ACCOUNT_SUFFIX_MAX_LENGTH;
+  if (cloudBucketName.length > maxBaseLength) {
     throw new CliError(
       `Cloud bucket name "${cloudBucketName}" is too long (${cloudBucketName.length} characters).\n` +
-        `Maximum: ${CLOUD_BUCKET_NAME_MAX_LENGTH} characters (S3, GCS, Azure container limit).\n` +
+        `Maximum: ${maxBaseLength} characters: the clouds take ${CLOUD_BUCKET_NAME_MAX_LENGTH} characters (S3, GCS, Azure container limit), and AWS adds -{account ID} (${CLOUD_BUCKET_ACCOUNT_SUFFIX_MAX_LENGTH} characters).\n` +
         'Use a shorter bucket name or project name.',
     );
   }
