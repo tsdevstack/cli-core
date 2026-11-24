@@ -5,6 +5,7 @@
 import type { FrameworkConfig } from '../../config';
 import type { DockerComposeServices } from '../types';
 import { logger } from '../../logger';
+import { toScreamingSnakeCase } from '../../secrets/to-screaming-snake-case';
 import {
   generateKongService,
   generateRedisService,
@@ -46,7 +47,7 @@ export function generateFrameworkServices(
   for (const service of config.services) {
     if (service.hasDatabase && service.databaseType === 'postgresql') {
       const dbName = service.name.replace(/-service$/, '');
-      const prefix = dbName.replace(/-/g, '_').toUpperCase();
+      const prefix = toScreamingSnakeCase(dbName);
 
       // Get port from service config or auto-assign
       const dbPort = service.databasePort || dbPortCounter++;

@@ -54,20 +54,50 @@ describe('resolveCliAssetDir', () => {
     });
 
     it('should resolve src/templates from the sources', () => {
+      fs.mkdirSync(path.join(packageRoot, 'src', 'templates', 'worker'));
+
+      expect(
+        resolveCliAssetDir(
+          'worker',
+          path.join(packageRoot, 'src', 'utils', 'paths'),
+        ),
+      ).toBe(path.join(packageRoot, 'src', 'templates', 'worker'));
+    });
+
+    it('should resolve the Kong plugins from their package from the sources', () => {
+      const pluginsPackage = path.join(
+        tempDir,
+        'node_modules',
+        '@tsdevstack',
+        'kong-plugins',
+      );
+      fs.mkdirSync(path.join(pluginsPackage, 'kong', 'plugins'), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(pluginsPackage, 'package.json'),
+        JSON.stringify({ name: '@tsdevstack/kong-plugins' }),
+      );
+
       expect(
         resolveCliAssetDir(
           'kong-plugins',
           path.join(packageRoot, 'src', 'utils', 'paths'),
         ),
-      ).toBe(path.join(packageRoot, 'src', 'templates', 'kong-plugins'));
+      ).toBe(
+        // Real path: Node's resolver returns one (macOS's temp folder is a symlink)
+        path.join(fs.realpathSync(pluginsPackage), 'kong', 'plugins'),
+      );
     });
 
     it("should resolve this repository's framework Kong plugins by default", () => {
       const resolved = resolveCliAssetDir('kong-plugins');
       expect(
-        resolved.endsWith(path.join('src', 'templates', 'kong-plugins')),
+        resolved.endsWith(path.join('kong-plugins', 'kong', 'plugins')),
       ).toBe(true);
-      expect(fs.existsSync(resolved)).toBe(true);
+      expect(
+        fs.existsSync(path.join(resolved, 'tsdevstack-api-key', 'handler.lua')),
+      ).toBe(true);
     });
   });
 

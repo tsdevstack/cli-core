@@ -9,6 +9,7 @@ import { findProjectRoot } from '../paths';
 import { writeTextFile } from '../fs';
 import { loadLocalSecretsFile } from './load-local-secrets-file';
 import { pickOwnerDatabaseUrl } from '../database/pick-owner-database-url';
+import { toScreamingSnakeCase } from './to-screaming-snake-case';
 
 /**
  * Generate .env file from .secrets.local.json
@@ -56,10 +57,9 @@ export function generateEnvFile(rootDir: string = findProjectRoot()): void {
       if (match) {
         // Remove -service suffix to match docker-compose generator
         // auth-service → auth → AUTH_DB_USER
-        const dbName = serviceName
-          .replace(/-service$/, '')
-          .replace(/-/g, '_')
-          .toUpperCase();
+        const dbName = toScreamingSnakeCase(
+          serviceName.replace(/-service$/, ''),
+        );
         secrets[`${dbName}_DB_USER`] = match[1];
         // URL-decode the password (it's URL-encoded in the URL but Docker needs raw value)
         secrets[`${dbName}_DB_PASSWORD`] = decodeURIComponent(match[2]);

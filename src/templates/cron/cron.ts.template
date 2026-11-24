@@ -1,0 +1,5 @@
+import { runCronJob } from '@tsdevstack/nest-common';
+import { CronModule } from './cron.module';
+
+// `node dist/cron.js <name>` runs the handler of that name once, then exits
+void runCronJob(CronModule, process.argv[2]);

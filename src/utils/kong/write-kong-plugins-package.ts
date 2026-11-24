@@ -4,8 +4,8 @@
  * one LuaRocks spec per plugin under `rockspecs/`, and the image's
  * `Dockerfile`, all at KONG_PLUGINS_VERSION. Hidden files and folders
  * (.DS_Store, editor folders) are left out. The hand-written files
- * (README, LICENSE, CHANGELOG) come from the monorepo's `kong-plugins/`;
- * the release scripts put the two together.
+ * and the tests come from the package packages/kong-plugins; the release
+ * script puts the two together.
  */
 
 import * as fs from 'fs';

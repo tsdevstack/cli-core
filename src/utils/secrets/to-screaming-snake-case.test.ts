@@ -119,4 +119,27 @@ describe('toScreamingSnakeCase', () => {
       expect(toScreamingSnakeCase('example-service')).toBe('EXAMPLE_SERVICE');
     });
   });
+
+  describe('Same result as the plain conversion', () => {
+    const inputs = [
+      'payment-v2-service',
+      'api-2-service',
+      'xn--bcher-kva-ch',
+      '1password-com',
+      'a_b-c',
+      'a__b',
+      'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      'myApp',
+      'MyApp',
+      'USER_ID',
+      'redis_password',
+      'a b',
+    ];
+
+    it.each(inputs)('should convert %j like the plain conversion', (input) => {
+      expect(toScreamingSnakeCase(input)).toBe(
+        input.replace(/-/g, '_').toUpperCase(),
+      );
+    });
+  });
 });

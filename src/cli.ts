@@ -38,6 +38,8 @@ import type { InitCliArgs } from './commands/init';
 import { removeService } from './commands/remove-service';
 import { registerDetachedWorker } from './commands/register-detached-worker';
 import { unregisterDetachedWorker } from './commands/unregister-detached-worker';
+import { registerCron } from './commands/register-cron';
+import { runCron } from './commands/run-cron';
 import { addBucketStorage } from './commands/add-bucket-storage';
 import { removeBucketStorage } from './commands/remove-bucket-storage';
 import { addMessagingTopic } from './commands/add-messaging-topic';
@@ -209,6 +211,34 @@ program
     wrapCommand(async (options: { worker?: string }) => {
       await unregisterDetachedWorker(options);
     }),
+  );
+
+program
+  .command('register-cron')
+  .description(
+    'Add a cron job to a NestJS service: handler file, entrypoint and script; prints the infrastructure.json entry',
+  )
+  .option('-s, --service <service>', 'The service whose image runs the job')
+  .option('-n, --name <name>', 'Cron job name (kebab-case)')
+  .action(
+    wrapCommand(async (options: { service?: string; name?: string }) => {
+      await registerCron(options);
+    }),
+  );
+
+program
+  .command('run-cron <name>')
+  .description(
+    "Run a scheduled job once locally: a cron job's handler, or a trigger's endpoint",
+  )
+  .option('-s, --service <service>', 'The service of the cron job')
+  .option('-e, --env <env>', 'The environment whose trigger entry to use')
+  .action(
+    wrapCommand(
+      async (name: string, options: { service?: string; env?: string }) => {
+        await runCron(name, options);
+      },
+    ),
   );
 
 program

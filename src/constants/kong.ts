@@ -116,7 +116,9 @@ export const KONG_DECLARATIVE_DIR = 'declarative';
 export const KONG_LOCAL_BUILD_CONTEXT = 'infrastructure/kong';
 
 /**
- * Framework Kong plugin sources, relative to the CLI templates directory.
+ * Framework Kong plugins, by their asset name: `dist/templates/kong-plugins`
+ * in the CLI package, copied there by the build from the package
+ * packages/kong-plugins (CLI_PACKAGE_ASSETS).
  */
 export const KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR = 'kong-plugins';
 
@@ -251,7 +253,7 @@ export const KONG_GENERATED_FILE_HEADER =
 /**
  * Framework plugin that removes client-sent identity headers before any auth
  * plugin runs (global plugin in kong.tsdevstack.yml). Source:
- * templates/kong-plugins/tsdevstack-strip-identity.
+ * packages/kong-plugins/kong/plugins/tsdevstack-strip-identity.
  */
 export const KONG_STRIP_IDENTITY_PLUGIN_NAME = 'tsdevstack-strip-identity';
 
@@ -259,7 +261,7 @@ export const KONG_STRIP_IDENTITY_PLUGIN_NAME = 'tsdevstack-strip-identity';
  * Framework plugin that lets the frontend server name the visitor it calls
  * Kong for, so the per-client rate limit counts that visitor instead of the
  * frontend server (global plugin in kong.tsdevstack.yml). Source:
- * templates/kong-plugins/tsdevstack-client-ip.
+ * packages/kong-plugins/kong/plugins/tsdevstack-client-ip.
  */
 export const KONG_CLIENT_IP_PLUGIN_NAME = 'tsdevstack-client-ip';
 
@@ -297,7 +299,7 @@ export const KONG_UPSTREAM_CLIENT_IP_HEADER = 'X-Tsdevstack-Real-IP';
  * Kong's tracing plugin, a framework global plugin: Kong's spans, and the
  * trace passed on to the services (W3C traceparent). Kong's bundled
  * OpenTelemetry plugin with parent-based sampling (a trace the frontend
- * already sampled is kept). Source: templates/kong-plugins/tsdevstack-opentelemetry.
+ * already sampled is kept). Source: packages/kong-plugins/kong/plugins/tsdevstack-opentelemetry.
  */
 export const KONG_OPENTELEMETRY_PLUGIN_NAME = 'tsdevstack-opentelemetry';
 
@@ -348,7 +350,7 @@ export const KONG_CLIENT_TRACE_HEADERS = [
 
 /**
  * Framework plugin on each partner service that removes the public partner
- * prefix from the upstream path. Source: templates/kong-plugins/tsdevstack-api-prefix.
+ * prefix from the upstream path. Source: packages/kong-plugins/kong/plugins/tsdevstack-api-prefix.
  */
 export const KONG_API_PREFIX_PLUGIN_NAME = 'tsdevstack-api-prefix';
 
@@ -373,7 +375,7 @@ export const KONG_TRUST_TOKEN_SECRET = 'KONG_TRUST_TOKEN';
 /**
  * Framework plugin that sets KONG_TRUST_HEADER on every request Kong passes
  * to a backend (global plugin in kong.tsdevstack.yml). Source:
- * templates/kong-plugins/tsdevstack-trust.
+ * packages/kong-plugins/kong/plugins/tsdevstack-trust.
  */
 export const KONG_TRUST_PLUGIN_NAME = 'tsdevstack-trust';
 
@@ -405,7 +407,7 @@ export const KONG_REQUEST_ID_HEADER = 'X-Kong-Request-Id';
  * request-transformer (X-Kong-Trust) and tsdevstack-client-ip
  * (X-Tsdevstack-Real-IP).
  *
- * Must match HEADERS in templates/kong-plugins/tsdevstack-strip-identity/handler.lua
+ * Must match HEADERS in packages/kong-plugins/kong/plugins/tsdevstack-strip-identity/handler.lua
  * (a test compares them).
  */
 export const KONG_CLIENT_IDENTITY_HEADERS = [
@@ -442,7 +444,7 @@ export const KONG_PATH_PARAM_PATTERN = '[^/]+';
 
 /**
  * Framework plugin on each partner service that checks dynamic API keys
- * against Redis. Source: templates/kong-plugins/tsdevstack-api-key.
+ * against Redis. Source: packages/kong-plugins/kong/plugins/tsdevstack-api-key.
  */
 export const KONG_API_KEY_PLUGIN_NAME = 'tsdevstack-api-key';
 

@@ -1,21 +1,18 @@
 import { describe, it, expect } from '@rstest/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { generateClientIpPlugin } from './generate-client-ip-plugin';
 import {
   KONG_CLIENT_IP_HEADER,
   KONG_FRONTEND_TOKEN_HEADER,
   KONG_UPSTREAM_CLIENT_IP_HEADER,
   KONG_CLIENT_TRACE_HEADERS,
+  KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR,
 } from '../../constants';
+import { resolveCliAssetDir } from '../paths/resolve-cli-asset-dir';
 
 const PLUGIN_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'templates',
-  'kong-plugins',
+  resolveCliAssetDir(KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR),
   'tsdevstack-client-ip',
 );
 

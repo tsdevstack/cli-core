@@ -43,6 +43,9 @@ export * from './templates';
 // Detached workers: the files and scripts register-detached-worker adds
 export * from './workers';
 
+// Cron jobs: the files and script register-cron adds, the entry it prints
+export * from './cron';
+
 // Kong Gateway constants
 export * from './kong';
 

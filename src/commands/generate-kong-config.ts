@@ -35,6 +35,7 @@
 
 import * as path from 'path';
 import { loadLocalSecrets, getRequiredSecret } from '../utils/secrets';
+import { toScreamingSnakeCase } from '../utils/secrets/to-screaming-snake-case';
 import { logger } from '../utils/logger';
 import { isFile, writeYamlFile, readYamlFile } from '../utils/fs';
 import {
@@ -296,7 +297,7 @@ export function generateKongConfig(_context?: OperationContext): void {
   const kongServices = [];
 
   for (const service of parsedServices) {
-    const serviceUrlKey = `${service.name.toUpperCase().replace(/-/g, '_')}_URL`;
+    const serviceUrlKey = `${toScreamingSnakeCase(service.name)}_URL`;
     const serviceUrl = secrets[serviceUrlKey] as string | undefined;
 
     if (!serviceUrl) {

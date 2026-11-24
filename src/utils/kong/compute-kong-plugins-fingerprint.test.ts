@@ -5,10 +5,12 @@ import * as path from 'path';
 import {
   KONG_PLUGINS_FINGERPRINT,
   KONG_PLUGINS_VERSION,
+  KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR,
 } from '../../constants';
 import { computeKongPluginsFingerprint } from './compute-kong-plugins-fingerprint';
+import { resolveCliAssetDir } from '../paths/resolve-cli-asset-dir';
 
-const SHIPPED = path.join(__dirname, '..', '..', 'templates', 'kong-plugins');
+const SHIPPED = resolveCliAssetDir(KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR);
 
 describe('computeKongPluginsFingerprint', () => {
   const dirs: string[] = [];

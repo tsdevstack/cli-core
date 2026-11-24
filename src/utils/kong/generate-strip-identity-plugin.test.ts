@@ -1,16 +1,15 @@
 import { describe, it, expect } from '@rstest/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { generateStripIdentityPlugin } from './generate-strip-identity-plugin';
-import { KONG_CLIENT_IDENTITY_HEADERS } from '../../constants';
+import {
+  KONG_CLIENT_IDENTITY_HEADERS,
+  KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR,
+} from '../../constants';
+import { resolveCliAssetDir } from '../paths/resolve-cli-asset-dir';
 
 const PLUGIN_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'templates',
-  'kong-plugins',
+  resolveCliAssetDir(KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR),
   'tsdevstack-strip-identity',
 );
 

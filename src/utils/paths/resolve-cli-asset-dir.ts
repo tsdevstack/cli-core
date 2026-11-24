@@ -6,7 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { CliError } from '../errors';
-import { CLI_PACKAGE_NAME } from '../../constants';
+import { CLI_PACKAGE_NAME, CLI_PACKAGE_ASSETS } from '../../constants';
+import { resolvePackageAssetDir } from './resolve-package-asset-dir';
 
 /**
  * Returns the absolute path of `relativePath` inside the CLI templates
@@ -16,7 +17,9 @@ import { CLI_PACKAGE_NAME } from '../../constants';
  * Works from the bundled CLI (dist/cli.js), the plugin entry
  * (dist/plugin/index.js) and the sources (tests): walks up from this module
  * to the package root, then picks dist/templates when running from dist and
- * src/templates otherwise.
+ * src/templates otherwise. From the sources, an asset that lives in another
+ * package of the repository (CLI_PACKAGE_ASSETS: the framework Kong plugins)
+ * comes from that package.
  *
  * @param relativePath - Path inside the templates directory (e.g. "kong-plugins")
  * @param fromDir - Start directory (defaults to this module's directory; for tests)
@@ -43,7 +46,11 @@ export function resolveCliAssetDir(
           fromDist ? 'dist' : 'src',
           'templates',
         );
-        const assetDir = path.join(templatesDir, relativePath);
+        const packageAsset = CLI_PACKAGE_ASSETS[relativePath];
+        const assetDir =
+          !fromDist && packageAsset
+            ? resolvePackageAssetDir(packageJsonPath, packageAsset)
+            : path.join(templatesDir, relativePath);
 
         if (!fs.existsSync(assetDir)) {
           throw new CliError(

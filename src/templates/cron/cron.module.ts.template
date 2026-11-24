@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import {
+  ObservabilityModule,
+  RedisModule,
+  SecretsModule,
+  provideCronJobs,
+} from '@tsdevstack/nest-common';{{PRISMA_IMPORT}}
+import { {{CRON_CLASS_NAME}} } from './cron/{{CRON_JOB_NAME}}.cron';
+
+/**
+ * CronModule
+ *
+ * Cron jobs run here: `node dist/cron.js <name>` starts the handler of that
+ * name once, then exits. The schedule is the job's entry in
+ * .tsdevstack/infrastructure.json; `npx tsdevstack register-cron` writes a
+ * handler file and prints the entry.
+ *
+ * A new handler goes into `handlers`: import its class and add it to the list.
+ */
+const handlers = [{{CRON_CLASS_NAME}}];
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    SecretsModule,
+    ObservabilityModule.forRoot(),
+    RedisModule,{{PRISMA_MODULE}}
+  ],
+  providers: provideCronJobs(handlers),
+})
+export class CronModule {}

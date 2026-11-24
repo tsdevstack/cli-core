@@ -5,6 +5,7 @@
 import type { FrameworkService } from '../../config';
 import type { DockerComposeServices, PgAdminServers } from '../types';
 import { getDbServiceName } from '../get-db-service-name';
+import { toScreamingSnakeCase } from '../../secrets/to-screaming-snake-case';
 
 export function generatePgAdminService(
   services: FrameworkService[],
@@ -19,7 +20,7 @@ export function generatePgAdminService(
     if (service.hasDatabase) {
       const dbName = service.name.replace(/-service$/, '');
       const dbServiceName = getDbServiceName(service.name);
-      const prefix = dbName.replace(/-/g, '_').toUpperCase();
+      const prefix = toScreamingSnakeCase(dbName);
       const username = secrets[`${prefix}_DB_USER`] || service.name;
 
       servers[`Server ${serverIndex}`] = {

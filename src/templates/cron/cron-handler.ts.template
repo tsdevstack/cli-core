@@ -1,0 +1,31 @@
+import { Injectable, Logger } from '@nestjs/common';
+import type { CronJobHandler } from '@tsdevstack/nest-common';
+
+/**
+ * Cron job "{{CRON_JOB_NAME}}"
+ *
+ * Runs once per start, then exits: returning is success, throwing is
+ * failure. The signal fires at the job's timeout (`timeout` in
+ * infrastructure.json) or when the platform stops the run: pass it to fetch,
+ * and check `signal.aborted` between the steps of a long loop or between
+ * Prisma calls. Inject what the job needs (PrismaService, ...) through the
+ * constructor.
+ *
+ * Locally: npx tsdevstack run-cron {{CRON_JOB_NAME}} --service {{SERVICE_NAME}}
+ */
+@Injectable()
+export class {{CRON_CLASS_NAME}} implements CronJobHandler {
+  readonly name = '{{CRON_JOB_NAME}}';
+  private readonly logger = new Logger({{CRON_CLASS_NAME}}.name);
+
+  async run(signal: AbortSignal): Promise<void> {
+    // The job's work goes here; check the signal between long steps
+    this.logger.log(`${this.name}: starting`);
+    // Keeps run() async until it awaits real work; remove it then
+    await Promise.resolve();
+    if (signal.aborted) {
+      return;
+    }
+    this.logger.log(`${this.name}: nothing to do yet`);
+  }
+}

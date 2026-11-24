@@ -2,11 +2,16 @@ import { describe, it, expect, afterEach } from '@rstest/core';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { KONG_PLUGINS_VERSION } from '../../constants';
+import {
+  KONG_BASE_IMAGE,
+  KONG_PLUGINS_VERSION,
+  KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR,
+} from '../../constants';
 import { listKongPluginDirs } from './list-kong-plugin-dirs';
 import { writeKongPluginsPackage } from './write-kong-plugins-package';
+import { resolveCliAssetDir } from '../paths/resolve-cli-asset-dir';
 
-const SHIPPED = path.join(__dirname, '..', '..', 'templates', 'kong-plugins');
+const SHIPPED = resolveCliAssetDir(KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR);
 
 describe('writeKongPluginsPackage', () => {
   const dirs: string[] = [];
@@ -131,6 +136,27 @@ describe('writeKongPluginsPackage', () => {
           version: KONG_PLUGINS_VERSION,
         });
       }
+    });
+
+    it("should match the plugins package's version", () => {
+      // The package (packages/kong-plugins) holds the plugins at kong/plugins
+      const packageJson = JSON.parse(
+        fs.readFileSync(path.join(SHIPPED, '..', '..', 'package.json'), 'utf8'),
+      ) as { name?: string; version?: string };
+
+      expect(packageJson).toMatchObject({
+        name: '@tsdevstack/kong-plugins',
+        version: KONG_PLUGINS_VERSION,
+      });
+    });
+
+    it("should have the plugins package's tests run on the Kong the CLI builds from", () => {
+      const constants = fs.readFileSync(
+        path.join(SHIPPED, '..', '..', 'tests', 'helpers', 'constants.ts'),
+        'utf8',
+      );
+
+      expect(constants).toContain(`KONG_IMAGE = '${KONG_BASE_IMAGE}';`);
     });
 
     it("should replace an earlier run's plugins and specs, and keep other files", () => {

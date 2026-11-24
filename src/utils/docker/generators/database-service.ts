@@ -4,6 +4,7 @@
 
 import type { DockerComposeServices } from '../types';
 import { getDbServiceName } from '../get-db-service-name';
+import { toScreamingSnakeCase } from '../../secrets/to-screaming-snake-case';
 
 export function generateDatabaseService(
   serviceName: string,
@@ -12,10 +13,7 @@ export function generateDatabaseService(
 ): DockerComposeServices {
   const containerName = getDbServiceName(serviceName);
   // Env var prefix: auth-service → AUTH (strip -service, uppercase, hyphens to underscores)
-  const prefix = serviceName
-    .replace(/-service$/, '')
-    .replace(/-/g, '_')
-    .toUpperCase();
+  const prefix = toScreamingSnakeCase(serviceName.replace(/-service$/, ''));
 
   return {
     [containerName]: {

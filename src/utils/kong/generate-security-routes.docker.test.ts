@@ -63,6 +63,12 @@ import {
   type RunningContainer,
 } from '../../test-utils/docker';
 import { loadApiKeyContract } from '../../test-utils/kong';
+import {
+  KONG_CLIENT_IP_HEADER,
+  KONG_FRONTEND_TOKEN_HEADER,
+  KONG_TRACEPARENT_COPY_HEADER,
+  KONG_UPSTREAM_CLIENT_IP_HEADER,
+} from '../../constants';
 
 const {
   API_KEY_INDEX_MARKER_KEY,
@@ -822,6 +828,51 @@ describe.skipIf(!dockerAvailable)('Generated Kong gateway (Docker)', () => {
         });
         expect(received.headers['x-real-ip']).toBeDefined();
         expect(received.headers['x-real-ip']).not.toBe('198.51.100.99');
+      },
+      TEST_TIMEOUT_MS,
+    );
+  });
+
+  // The framework plugins' own behaviour is tested in packages/kong-plugins.
+  // These check that the generated config and the CLI-built image wire them.
+  describe('framework plugins in the generated config', () => {
+    it(
+      'should pass the visitor the frontend names on to the service (tsdevstack-client-ip)',
+      async () => {
+        const visitor = '198.51.100.23';
+        const received = await upstream('GET', '/offers/v1/plans/featured', {
+          [KONG_CLIENT_IP_HEADER]: visitor,
+          [KONG_FRONTEND_TOKEN_HEADER]: FRONTEND_TOKEN,
+        });
+
+        expect(
+          received.headers[KONG_UPSTREAM_CLIENT_IP_HEADER.toLowerCase()],
+        ).toBe(visitor);
+        expect(
+          received.headers[KONG_FRONTEND_TOKEN_HEADER.toLowerCase()],
+        ).toBeUndefined();
+        expect(
+          received.headers[KONG_CLIENT_IP_HEADER.toLowerCase()],
+        ).toBeUndefined();
+      },
+      TEST_TIMEOUT_MS,
+    );
+
+    it(
+      "should continue the frontend's trace and copy its traceparent (tsdevstack-opentelemetry)",
+      async () => {
+        const traceId = randomBytes(16).toString('hex');
+        const received = await upstream('GET', '/offers/v1/plans/featured', {
+          [KONG_FRONTEND_TOKEN_HEADER]: FRONTEND_TOKEN,
+          traceparent: `00-${traceId}-53995c3f42cd8ad8-01`,
+        });
+
+        expect(received.headers.traceparent).toMatch(
+          new RegExp(`^00-${traceId}-[0-9a-f]{16}-01$`),
+        );
+        expect(
+          received.headers[KONG_TRACEPARENT_COPY_HEADER.toLowerCase()],
+        ).toBe(received.headers.traceparent);
       },
       TEST_TIMEOUT_MS,
     );

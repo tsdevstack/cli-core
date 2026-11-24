@@ -1,0 +1,9 @@
+// Local development only (npm run cron): a cron job compiles into its own
+// folder, so it doesn't delete and rewrite the dist of a running `npm run dev`.
+// Builds for deployment use dist: `nest build` emits dist/cron.js.
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "./node_modules/.cache/cron-dev"
+  }
+}

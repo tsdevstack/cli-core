@@ -7,6 +7,7 @@ import * as path from 'path';
 import type { FrameworkService } from '../../config';
 import type { PgAdminServers } from '../types';
 import { writeJsonFile } from '../../fs';
+import { toScreamingSnakeCase } from '../../secrets/to-screaming-snake-case';
 
 export function writePgAdminConfigs(
   rootDir: string,
@@ -20,7 +21,7 @@ export function writePgAdminConfigs(
   for (const service of services) {
     if (service.hasDatabase) {
       const dbName = service.name.replace(/-service$/, '');
-      const prefix = dbName.replace(/-/g, '_').toUpperCase();
+      const prefix = toScreamingSnakeCase(dbName);
       const username = secrets[`${prefix}_DB_USER`] || service.name;
 
       servers[`Server ${serverIndex}`] = {
@@ -44,7 +45,7 @@ export function writePgAdminConfigs(
   for (const service of services) {
     if (service.hasDatabase) {
       const dbName = service.name.replace(/-service$/, '');
-      const prefix = dbName.replace(/-/g, '_').toUpperCase();
+      const prefix = toScreamingSnakeCase(dbName);
       const username = secrets[`${prefix}_DB_USER`] || service.name;
       const password = secrets[`${prefix}_DB_PASSWORD`];
 

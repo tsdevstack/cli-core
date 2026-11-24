@@ -36,4 +36,5 @@ export * from './generate-backend-env-files';
 export * from './generate-spa-env-files';
 export * from './deep-delete-service-references';
 export * from './to-screaming-snake-case';
+export * from './to-kebab-case';
 export * from './generate-secret-map';

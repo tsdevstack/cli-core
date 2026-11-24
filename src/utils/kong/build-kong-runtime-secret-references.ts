@@ -3,6 +3,7 @@
  */
 
 import { KONG_RUNTIME_SECRETS } from '../../constants';
+import { toKebabCase } from '../secrets/to-kebab-case';
 
 /**
  * The value each Kong runtime secret placeholder resolves to: a reference to
@@ -16,7 +17,7 @@ export function buildKongRuntimeSecretReferences(): Record<string, string> {
   return Object.fromEntries(
     KONG_RUNTIME_SECRETS.map((key) => [
       key,
-      `{vault://env/${key.toLowerCase().replace(/_/g, '-')}}`,
+      `{vault://env/${toKebabCase(key)}}`,
     ]),
   );
 }

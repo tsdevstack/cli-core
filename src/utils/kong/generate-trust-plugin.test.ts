@@ -1,16 +1,15 @@
 import { describe, it, expect } from '@rstest/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { generateTrustPlugin } from './generate-trust-plugin';
-import { KONG_TRUST_HEADER } from '../../constants';
+import {
+  KONG_TRUST_HEADER,
+  KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR,
+} from '../../constants';
+import { resolveCliAssetDir } from '../paths/resolve-cli-asset-dir';
 
 const PLUGIN_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'templates',
-  'kong-plugins',
+  resolveCliAssetDir(KONG_FRAMEWORK_PLUGINS_TEMPLATE_DIR),
   'tsdevstack-trust',
 );
 

@@ -11,6 +11,7 @@ import { generateBase64Secret } from './generate-base64-secret';
 import { generateHexSecret } from './generate-hex-secret';
 import { generateRSAKeyPair } from './generate-rsa-keypair';
 import { generateServiceUrls } from './generate-service-urls';
+import { toScreamingSnakeCase } from './to-screaming-snake-case';
 import {
   MIGRATION_DATABASE_URL_KEY,
   LOCAL_REDIS_HOST,
@@ -112,7 +113,7 @@ export function generateFrameworkSecretsFile(
           service.type,
         ) || service.type === 'nextjs';
       if (!isFrontend) {
-        const keyName = `${service.name.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+        const keyName = `${toScreamingSnakeCase(service.name)}_API_KEY`;
         const existingApiKey = existing[keyName];
         frameworkSecrets[keyName] =
           (typeof existingApiKey === 'string' && existingApiKey) ||
@@ -148,7 +149,7 @@ export function generateFrameworkSecretsFile(
           service.type,
         ) || service.type === 'nextjs';
       if (!isFrontend) {
-        const keyName = `${service.name.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+        const keyName = `${toScreamingSnakeCase(service.name)}_API_KEY`;
         frameworkSecrets[keyName] = generateHexSecret(32);
       }
     }
@@ -189,10 +190,10 @@ export function generateFrameworkSecretsFile(
         service.type,
       ) || service.type === 'nextjs';
     if (!isFrontend) {
-      const keyName = `${service.name.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+      const keyName = `${toScreamingSnakeCase(service.name)}_API_KEY`;
       allServiceApiKeys.push(keyName);
 
-      const urlName = `${service.name.toUpperCase().replace(/-/g, '_')}_URL`;
+      const urlName = `${toScreamingSnakeCase(service.name)}_URL`;
       allServiceUrls.push(urlName);
     }
   }
@@ -255,7 +256,7 @@ export function generateFrameworkSecretsFile(
     // Dynamic bucket name secrets (needed locally AND in production)
     const bucketSecrets: Record<string, string> = {};
     for (const bucket of config.storage!.buckets) {
-      const key = `STORAGE_BUCKET_${bucket.replace(/-/g, '_').toUpperCase()}`;
+      const key = `STORAGE_BUCKET_${toScreamingSnakeCase(bucket)}`;
       bucketSecrets[key] = `${config.project.name}-${bucket}-dev`;
       storageBucketKeys.push(key);
     }
@@ -340,7 +341,7 @@ export function generateFrameworkSecretsFile(
 
     // Add API_KEY alias for this service's own API key (for AuthGuard compatibility)
     if (!isFrontend) {
-      const thisServiceApiKeyName = `${service.name.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+      const thisServiceApiKeyName = `${toScreamingSnakeCase(service.name)}_API_KEY`;
       serviceSecrets.API_KEY = frameworkSecrets[thisServiceApiKeyName];
     }
 

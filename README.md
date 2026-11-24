@@ -79,6 +79,13 @@ npx tsdevstack infra:deploy --env dev
 | `register-detached-worker`   | Register a BullMQ worker for separate container deployment |
 | `unregister-detached-worker` | Remove a detached worker registration                      |
 
+### Cron jobs
+
+| Command         | Description                                      |
+| --------------- | ------------------------------------------------ |
+| `register-cron` | Add a cron job to a service                      |
+| `run-cron`      | Run a scheduled job once on the local stack      |
+
 ### Code generation
 
 | Command                   | Description                                       |
@@ -155,6 +162,7 @@ Migrations run automatically as part of service deployment. These commands are f
 | `infra:deploy-schedulers` | Deploy all scheduled jobs |
 | `infra:list-schedulers`   | List jobs and status      |
 | `infra:remove-scheduler`  | Remove a scheduled job    |
+| `infra:run-cron`          | Start a scheduled job now |
 
 ### CI/CD
 
@@ -171,7 +179,7 @@ All commands: `npx tsdevstack <command>` or `npx tsds <command>`.
 | --- | --- | --- |
 | [`@tsdevstack/cli`](https://www.npmjs.com/package/@tsdevstack/cli) | Apache-2.0 | CLI: project scaffolding, infrastructure generation, deployment |
 | [`@tsdevstack/nest-common`](https://www.npmjs.com/package/@tsdevstack/nest-common) | MIT | Shared NestJS modules: auth, secrets, storage, messaging, observability |
-| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 58 tools |
+| [`@tsdevstack/cli-mcp`](https://www.npmjs.com/package/@tsdevstack/cli-mcp) | Apache-2.0 | MCP server: AI agent integration with 61 tools |
 | [`@tsdevstack/telemetry`](https://www.npmjs.com/package/@tsdevstack/telemetry) | Apache-2.0 | Traces for the services and Next.js frontends, sent to each cloud's trace service |
 | [`@tsdevstack/react-bot-detection`](https://www.npmjs.com/package/@tsdevstack/react-bot-detection) | MIT | React bot detection: behavioral analysis + honeypot |
 
